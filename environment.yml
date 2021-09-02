@@ -12,3 +12,4 @@ dependencies:
   - python-jenkins
   - xlrd
   - openpyxl
+  - nbformat
