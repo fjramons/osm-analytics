@@ -49,6 +49,8 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
 
         # Retrieves the information about the own build
         build_info = get_build_summary(jenkins_server, job_name, build_number)
+        if build_info['result'] is None:
+            build_info['result'] = 'FAILURE'
         df_known_builds.loc[this_build_and_job, 'build_result'] = build_info['result']
         print(f"Build: {build_info['result']}\t", end='')
         df_known_builds.loc[this_build_and_job, 'timestamp'] = pd.to_datetime(build_info['timestamp'], unit='ms') # Unit in Jenkins for timestamps
