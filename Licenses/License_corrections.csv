@@ -1,0 +1,11 @@
+Component,Real license,Reference
+cherrypy,BSD-3-Clause ,https://github.com/cherrypy/cherrypy/blob/main/LICENSE.md
+cherrypy,BSD-3-Clause ,https://github.com/cherrypy/cherrypy/blob/main/LICENSE.md
+dicttoxml,GNU General Public License v2.0,https://github.com/quandyfactory/dicttoxml/blob/master/LICENCE.txt
+oauthlib,BSD-3-Clause ,https://github.com/oauthlib/oauthlib/blob/master/LICENSE
+oauthlib,BSD-3-Clause ,https://github.com/oauthlib/oauthlib/blob/master/LICENSE
+autopage,Apache License 2.0,https://github.com/zaneb/autopage/blob/main/LICENSE
+uuid,Python Software Foundation License,http://zesty.ca/python/uuid.README.txt
+msal-extensions,MIT License,https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/dev/LICENSE
+ng2-file-upload,MIT License,https://github.com/valor-software/ng2-file-upload/blob/development/LICENSE
+pyjwt[crypto],MIT License,https://github.com/jpadilla/pyjwt/blob/master/LICENSE
