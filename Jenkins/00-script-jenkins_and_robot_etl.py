@@ -40,6 +40,8 @@ job_name = 'osm-stage_3-merge/master'
 try:
     with open('.env', 'r', encoding='utf-8') as f:
         for line in f:
+            if line.startswith('#'):
+                continue
             line = line.strip()
             key, value = line.split('=')
             os.environ[key] = value
@@ -75,3 +77,5 @@ for job in relevant_jobs:
                                   job_name=job,
                                   database_engine=engine,
                                   robot_report=os.path.join(inputs_folder, input_robot_file))
+
+# %%
