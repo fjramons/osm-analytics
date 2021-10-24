@@ -475,7 +475,7 @@ jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateEx
    | 8  | MONTH           | datetime64[ns] |
    | 9  | AGE             | category       |
 
-5. `df_top_bug_assignees`: Assignees of currently open bugs.
+5. `df_bug_assignees`: Assignees of currently open bugs.
 
    | # | Column  | Non-Null Count | Dtype  |
    |---|---------|----------------|--------|
@@ -483,7 +483,7 @@ jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateEx
    | 1 | n_bugs  | 12 non-null    | int64  |
    | 2 | company | 12 non-null    | object |
 
-6. `df_top_bug_company_assignees`: Aggregation of bug assignees per company, sorted.
+6. `df_bug_company_assignees`: Aggregation of bug assignees per company, sorted.
 
 7. `df_bug_closers`, `df_top_bug_closers`: Last assignee of bugs already closed
 
