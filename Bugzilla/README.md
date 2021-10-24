@@ -439,6 +439,10 @@ jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateEx
      - `CLOSED`
    - **`value`**: Variation of the magnitude expressed in `variable`.
 
+6. `ct_bug_variation_vs_module`: Summary crosstab table of the evolution of open bugs per month for the most relevant modules.
+   - Rows: Months, expressed in 'YYYY-MM' format.
+   - Columns: Selected modules.
+
 ### Top contributors
 
 1. `df_bug_reporters` and `df_top_bug_reporters`
