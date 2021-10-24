@@ -461,3 +461,34 @@ jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateEx
    ```python
    df_current_owner_bug = get_current_owner_bug(df_owner_events_by_bug)
    ```
+
+   | #  | Column          | Dtype          |
+   |--- | ------          | -----          |
+   | 0  | BUG_ID          | int64          |
+   | 1  | TIMESTAMP       | datetime64[ns] |
+   | 2  | OPERATION       | category       |
+   | 3  | VALUE           | object         |
+   | 4  | RELEASE         | category       |
+   | 5  | MODULE          | category       |
+   | 6  | BUG_DESCRIPTION | object         |
+   | 7  | ROW_NUMBER      | int64          |
+   | 8  | MONTH           | datetime64[ns] |
+   | 9  | AGE             | category       |
+
+5. `df_top_bug_assignees`: Assignees of currently open bugs.
+
+   | # | Column  | Non-Null Count | Dtype  |
+   |---|---------|----------------|--------|
+   | 0 | owner   | 12 non-null    | object |
+   | 1 | n_bugs  | 12 non-null    | int64  |
+   | 2 | company | 12 non-null    | object |
+
+6. `df_top_bug_company_assignees`: Aggregation of bug assignees per company, sorted.
+
+7. `df_bug_closers`, `df_top_bug_closers`: Last assignee of bugs already closed
+
+   | # | Column  | Non-Null Count | Dtype  |
+   |---|---------|----------------|--------|
+   | 0 | closer  | 12 non-null    | object |
+   | 1 | n_bugs  | 12 non-null    | int64  |
+   | 2 | company | 12 non-null    | object |
