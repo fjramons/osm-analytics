@@ -58,7 +58,7 @@ password = os.environ.get('JENKINS_PASS', None) or getpass.getpass()
 # 2. Populates the database with all builds from a set of relevant jobs
 
 # %%
-relevant_jobs = ['osm-stage_3-merge/master', 'osm-stage_3-merge/v9.0', 'osm-stage_3-merge/v10.0']
+relevant_jobs = ['osm-stage_3-merge/master', 'osm-stage_3-merge/v9.0', 'osm-stage_3-merge/v10.0', 'osm-stage_3-merge/v11.0']
 
 
 # %%
