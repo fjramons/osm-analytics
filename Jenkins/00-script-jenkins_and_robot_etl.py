@@ -20,6 +20,7 @@ from sqlalchemy import create_engine
 # 0. Input parameters
 
 # %%
+# Default values
 inputs_folder = 'inputs'
 outputs_folder = 'etl_outputs'
 url_jenkins_server = 'https://osm.etsi.org/jenkins'
@@ -29,11 +30,9 @@ table_known_builds = 'builds_info'
 table_robot_reports = 'robot_reports'
 table_robot_reports_extended = 'robot_reports_extended'
 dump_all_as_spreadsheets = False
-#job_name = 'osm-stage_3-merge/v9.0'
-job_name = 'osm-stage_3-merge/master'
 
 # %% [markdown]
-# Credentials:
+# Tries to bulk load credentials and other environment variables from .env file:
 
 # %%
 # If the '.env' file exists, loads the environment variables
@@ -50,9 +49,19 @@ except FileNotFoundError as e:
 
 
 # %%
+# Retrieves Jenkins credentials from environment, if applicable
 username = os.environ.get('JENKINS_USER', None) or input('Username: ')
 password = os.environ.get('JENKINS_PASS', None) or getpass.getpass()
 
+# Other environment variables
+url_jenkins_server = os.environ.get('URL_JENKINS_SERVER', None) or url_jenkins_server
+database_uri = os.environ.get('DATABASE_URI', None) or database_uri
+inputs_folder = os.environ.get('INPUTS_FOLDER', None) or inputs_folder
+outputs_folder = os.environ.get('OUTPUTS_FOLDER', None) or outputs_folder
+input_robot_file = os.environ.get('INPUT_ROBOT_FILE', None) or input_robot_file
+table_known_builds = os.environ.get('TABLE_KNOWN_BUILDS', None) or table_known_builds
+table_robot_reports = os.environ.get('TABLE_ROBOT_REPORTS', None) or table_robot_reports
+table_robot_reports_extended = os.environ.get('TABLE_ROBOT_REPORTS_EXTENDED', None) or table_robot_reports_extended
 
 # %% [markdown]
 # 2. Populates the database with all builds from a set of relevant jobs
