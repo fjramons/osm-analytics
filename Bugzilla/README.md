@@ -188,16 +188,30 @@ jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateEx
    | 10 | ISSUER          | object         |
    | 11 | SOLVED          | bool           |
 
-6. `df_open_bugs_selected`
+6. `df_multibranch_bugs_open`: Bugs open in multiple branches
+
+   ```python
+   df_multibranch_bugs_open = get_multibranch_bugs_open(df_open_bugs)
+   ```
+
+   | # | Column          | Dtype          |
+   |---|-----------------|----------------|
+   | 0 | BUG_DESCRIPTION | object         |
+   | 1 | NUM_BRANCHES    | int64          |
+   | 2 | RELEASE         | object         |
+   | 3 | MODULE          | object         |
+   | 4 | TIMESTAMP       | datetime64[ns] |
+
+7. `df_open_bugs_selected`
 
    - From `df_bug_summary.query('SOLVED==False')`.
    - Only includes bugs from relevant modules (listed in `most_relevant_modules`).
 
-7. `ct_open_bugs` and `ct_open_bugs_selected`
+8. `ct_open_bugs` and `ct_open_bugs_selected`
 
    - Crosstab: "Module" vs. "Age" (from `df_open_bugs`).
 
-8. `ct_open_bugs_age_vs_state`
+9.  `ct_open_bugs_age_vs_state`
 
    - Crosstab: "State" vs. "Age" (from `df_open_bugs`).
 
