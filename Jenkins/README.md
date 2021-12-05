@@ -27,6 +27,8 @@ Default behaviours can be changed by setting specific environment variables:
   - If not set, it will be the `etl_outputs` subfolder.
 - `DATABASE_URI`: URI of the database where historical Jenkins runs are stored.
   - If not set, the URI will correspond to the following SQLite location: `f'sqlite:///{inputs_folder}/test_executions.db'`
+- `JENKINS_USER`: Username to access the Jenkins server. If not set, the user will be prompted interactively.
+- `JENKINS_PASS`: Password to access the Jenkins server. If not set, the user will be prompted interactively.
 - `OUTPUTS_FOLDER`: Folder to save results.
   - If not set, it will use the `report_outputs` subfolder.
 - `TABLE_KNOWN_BUILDS`: Name of the table in the database that saves the historical series of builds.
