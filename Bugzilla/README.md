@@ -10,11 +10,63 @@ Open and run the `bugzilla_analysis.ipynb` notebook. The results will be publish
   - If the file `inputs/former_mdl_assessments.xlsx` exists, it is taken into account to add a recommendation per bug.
 - `XXXXXXXX_SUMMARY_bug_outliers.xlsx`: Summary of bug outliers per module.
 
-It can also be run unattended as:
+It can also be executed from the command line as:
 
 ```bash
 jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateExporter.exclude_input=True --execute bugzilla_analysis.ipynb
 ```
+
+### Unattended execution
+
+UNIX/OSX/Linux:
+
+```bash
+./launch_bugzilla_analysis.sh
+```
+
+Windows:
+
+```powershell
+launch_bugzilla_analysis.cmd
+```
+
+## Environment variables
+
+Default behaviours can be changed by setting specific environment variables:
+
+- `INPUTS_FOLDER`: Folder where input data is located.
+  - If not set, it will be the `etl_outputs` subfolder.
+- `OUTPUTS_FOLDER`: Folder to save results.
+  - If not set, it will use the `report_outputs` subfolder.
+- `SKIP_EXPORT_TO_HTML`: If set, the Notebook is not exported to HTML.
+- `FORMER_MDL_ASSESSMENTS_FILE`: Filename of the table with MDL assessments.
+  - If not set, it will use `"former_mdl_assessments.xlsx"`.
+- `BUGZILLA_CSV`: Location of input CSV with all Bugzilla events.
+  - If not set, it will use `https://osm.etsi.org/stats/bugs.csv`.
+- `DATE_FOR_BUG_DEPRECATION`: Bugs older or equal to this date will be considered deprecated.
+  - If not set, it will take 2020-07-01 as reference date.
+- `DAYS_4_RECENT_BUGS`: Number of days since today to consider a bug recent.
+  - If not set, it will take 21 days.
+- `MOST_RELEVANT_MODULES`: Names of the most relevant modules, to be used in "selected" analysis in the report.
+  - If not set, the following list will be assumed:
+    - "IM-NBI"
+    - "NBI"
+    - "RO"
+    - "DEVOPS"
+    - "Robot-tests"
+    - "Descriptor-packages"
+    - "N2VC"
+    - "OSMClient"
+    - "LCM"
+    - "common"
+    - "MON"
+    - "POL"
+    - "PLA"
+    - "NG-UI"
+    - "Any"
+    - "Unknown"
+    - "Other"
+    - "Documentation / Wiki"
 
 ## Main generated dataframes
 
