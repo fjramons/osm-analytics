@@ -7,10 +7,10 @@ Open and run the `01-analysis_of_test_results.ipynb` notebook. The results will 
 - `analysis_of_test_results.html`: Full report.
 - `*.png`, `*.svg`: Figures extracted from the report.
 
-It can also be run unattended as:
+It can also be executed from the command line as:
 
 ```bash
-!jupyter nbconvert --to html --output report_outputs/analysis_of_test_results.html --TemplateExporter.exclude_input=True --execute  01-analysis_of_test_results.ipynb
+jupyter nbconvert --to html --output report_outputs/analysis_of_test_results.html --TemplateExporter.exclude_input=True --execute 01-analysis_of_test_results.ipynb
 ```
 
 In case only a refresh of the database is intended, then just do:
@@ -19,12 +19,28 @@ In case only a refresh of the database is intended, then just do:
 ./00-script-jenkins_and_robot_etl.py
 ```
 
+### Unattended execution
+
+UNIX/OSX/Linux:
+
+```bash
+./launch_test_results.sh
+```
+
+Windows:
+
+```powershell
+launch_test_results.cmd
+```
+
 ## Environment variables
 
 Default behaviours can be changed by setting specific environment variables:
 
 - `INPUTS_FOLDER`: Folder where input data is located.
   - If not set, it will be the `etl_outputs` subfolder.
+- `SKIP_DATABASE_UPDATE`: If set, the database update from Jenkins is skipped.
+- `SKIP_EXPORT_TO_HTML`: If set, the Notebook is not exported to HTML.
 - `DATABASE_URI`: URI of the database where historical Jenkins runs are stored.
   - If not set, the URI will correspond to the following SQLite location: `f'sqlite:///{inputs_folder}/test_executions.db'`
 - `JENKINS_USER`: Username to access the Jenkins server. If not set, the user will be prompted interactively.
