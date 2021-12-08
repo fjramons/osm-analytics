@@ -1,4 +1,4 @@
-:: Launches the Jupyter Notebook with teh analysis of test results
+:: Launches the Jupyter Notebook with the analysis of test results
 @ECHO OFF
 
 REM Sets script's folder as working directory
