@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Sets the Anaconda/Conda environment
+eval "$(conda shell.bash hook)"
+conda activate osm-analytics
+
 # Sets script's folder as working directory
 dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 pushd "$dir" > /dev/null

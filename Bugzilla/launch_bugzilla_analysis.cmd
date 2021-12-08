@@ -1,6 +1,9 @@
 :: Launches Bugzilla analysis
 @ECHO OFF
 
+REM Sets the Anaconda/Conda environment
+CALL conda activate osm-analytics
+
 REM Sets script's folder as working directory
 PUSHD "%~dp0"
 
