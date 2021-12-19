@@ -45,7 +45,8 @@ try:
             key, value = line.split('=')
             os.environ[key] = value
 except FileNotFoundError as e:
-    print("Environment file ('.env') does not exist. Skipping...")
+    # print("Environment file ('.env') does not exist. Skipping...")
+    pass
 
 
 # %%
