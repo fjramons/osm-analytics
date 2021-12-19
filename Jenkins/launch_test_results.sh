@@ -19,6 +19,9 @@ export SKIP_EXPORT_TO_HTML=True
 
 # Unless explicitly prevented, updates the report
 if [ -z ${SKIP_ALL_UPDATES} ]; then
+    # In case there are special credentials for Jenkins and the database, it sources them
+    [ -f inputs/env.rc ] && source inputs/env.rc
+
     # Refresh the database with the latest Jenkins builds
     echo "Refreshing database..."
     python ./00-script-jenkins_and_robot_etl.py
@@ -32,7 +35,7 @@ fi
 # If requested (i.e. `UPLOAD_REPORT` is defined), uploads the results to the FTP
 if [ ! -z ${UPLOAD_REPORT} ]; then
     echo "Uploading report to FTP..."
-    source ../.env
+    [ -f ../.env ] && source ../.env
     TIMESTAMP=$(date '+%Y%m%d_%H%M')
 
     # FTP uploader is "sourced" in a contained environment to inherit all the
