@@ -68,7 +68,7 @@ table_robot_reports_extended = os.environ.get('TABLE_ROBOT_REPORTS_EXTENDED', No
 # 2. Populates the database with all builds from a set of relevant jobs
 
 # %%
-relevant_jobs = ['osm-stage_3-merge/master', 'osm-stage_3-merge/v9.0', 'osm-stage_3-merge/v10.0', 'osm-stage_3-merge/v11.0']
+relevant_jobs = ['osm-stage_3-merge/master', 'osm-stage_3-merge/v9.0', 'osm-stage_3-merge/v10.0', 'osm-stage_3-merge/v11.0', 'osm-stage_3-merge/v12.0']
 
 
 # %%
