@@ -62,8 +62,8 @@ Default behaviours can be changed by setting specific environment variables:
 - `DAYS_SINCE_TODAY_4_ANALYSIS`: If defined, it is used as the number of days considered in the charts of the report, including today.
   - If not set, it will consider a window of **21** days up to the current day.
 - `JOB_IDS`: List of jobs/branches considered in the analysis.
-  - If not set, the following list will be used: `['v11.0', 'v10.0', 'master', 'v9.0']`
+  - If not set, the following list will be used: `['master', 'v21.0', 'v11.0', 'v10.0', 'v9.0']`
 - `JOB_NAMES`: List of human-readable jobs/branches considered in the analysis.
-  - If not set, the following list will be used: `['Master branch', 'Release ELEVEN', 'Release TEN', 'Release NINE']`
+  - If not set, the following list will be used: `['Master branch', 'Release TWELVE', 'Release ELEVEN', 'Release TEN', 'Release NINE']`
 - `FIRST_DATE`: If defined, it is used to define the oldest date considered in the charts of the report. When defined, it overrides the window defined by `DAYS_SINCE_TODAY_4_ANALYSIS`.
 - `LAST_DATE`: If defined, it is used to define the latest date considered in the charts of the report. If not defined, it will be set to the current day (`today`).
