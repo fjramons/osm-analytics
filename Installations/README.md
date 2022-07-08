@@ -125,21 +125,35 @@ TBC.
 
 4. `df_installations_wide`: Dataframe of achieved operations (`df_operations`) enriched with the columns of the summary of each installation attempt (`df_info_operations_wide`).
 
-| #  | Column            | Dtype          |
-|----|-------------------|----------------|
-| 0  | timestamp         | datetime64[ns] |
-| 1  | location          | category       |
-| 2  | installation_id   | object         |
-| 3  | local_ts          | object         |
-| 4  | event             | category       |
-| 5  | achievement       | category       |
-| 6  | comment           | object         |
-| 7  | tags              | object         |
-| 8  | release           | object         |
-| 9  | docker_tag        | object         |
-| 10 | installation_type | object         |
-| 11 | osm_unhealthy     | object         |
-| 12 | fatal             | object         |
+   | #  | Column            | Dtype          |
+   |----|-------------------|----------------|
+   | 0  | timestamp         | datetime64[ns] |
+   | 1  | location          | category       |
+   | 2  | installation_id   | object         |
+   | 3  | local_ts          | object         |
+   | 4  | event             | category       |
+   | 5  | achievement       | category       |
+   | 6  | comment           | object         |
+   | 7  | tags              | object         |
+   | 8  | release           | object         |
+   | 9  | docker_tag        | object         |
+   | 10 | installation_type | object         |
+   | 11 | osm_unhealthy     | object         |
+   | 12 | fatal             | object         |
+
+5. `df_installation_attempts`: Dataframe with information about all installation attempts.
+
+   | # | Column            | Dtype          |
+   |---|-------------------|----------------|
+   | 0 | timestamp         | datetime64[ns] |
+   | 1 | location          | category       |
+   | 2 | comment           | object         |
+   | 3 | tags              | object         |
+   | 4 | release           | object         |
+   | 5 | docker_tag        | object         |
+   | 6 | installation_type | object         |
+   | 7 | osm_unhealthy     | object         |
+   | 8 | fatal             | object         |
 
 ### Time series of installation attempts per release
 
