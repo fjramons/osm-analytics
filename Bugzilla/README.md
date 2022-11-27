@@ -263,7 +263,7 @@ Default behaviours can be changed by setting specific environment variables:
 
    - Crosstab: "Module" vs. "Age" (from `df_open_bugs`).
 
-9.  `ct_open_bugs_age_vs_state`
+9. `ct_open_bugs_age_vs_state`
 
    - Crosstab: "State" vs. "Age" (from `df_open_bugs`).
 
@@ -351,7 +351,7 @@ Default behaviours can be changed by setting specific environment variables:
    | 3190 | 2021-04-16 10:52:55 | 1433   | bug_status | UNCONFIRMED      |     | 2021-04-30 23:59:59 |     | False  | True       | False       | True     | True   | False  | 2021-02-05 11:15:25 | 2021-04-30 23:59:59 | 84 days 12:44:34 |
    | 3195 | 2021-04-19 11:38:06 | 1433   | bug_status | RESOLVED         |     | 2021-04-30 23:59:59 |     | True   | False      | False       | False    | False  | True   | 2021-02-05 11:15:25 | 2021-04-19 11:38:06 | 73 days 00:22:41 |
 
-2. `df_monthly_time_samples_per_bug`: Evolution of age of open bugs at each month, disaggregated per module. 
+2. `df_monthly_time_samples_per_bug`: Evolution of age of open bugs at each month, disaggregated per module.
 
    - The dataframe of bug events is oversampled to add to each month rows that represent the bugs that remain open by that time (i.e. if a month did not have any event related to the bug and the bug remains open by that month, an intermadiate sample is inserted).
    - This is required to compute e.g. average time of open bugs per month.
