@@ -76,6 +76,7 @@ relevant_jobs = [
     'osm-stage_3-merge/v12.0',
     'osm-stage_3-merge/v13.0',
     'osm-stage_3-merge/v14.0',
+    'osm-stage_3-merge/v15.0',
 ]
 
 
