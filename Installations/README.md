@@ -1,5 +1,18 @@
 # README  - Installations analysis
 
+- [README  - Installations analysis](#readme----installations-analysis)
+  - [Usage](#usage)
+    - [From Docker container](#from-docker-container)
+      - [Using the container](#using-the-container)
+      - [Developing from the container](#developing-from-the-container)
+    - [Unattended execution](#unattended-execution)
+  - [Environment variables](#environment-variables)
+  - [ANNEX: Main generated dataframes](#annex-main-generated-dataframes)
+    - [Basic dataframes](#basic-dataframes)
+    - [Time series of installation attempts per release](#time-series-of-installation-attempts-per-release)
+    - [Analysis of progress during installation](#analysis-of-progress-during-installation)
+    - [Analysis of failed installation attempts](#analysis-of-failed-installation-attempts)
+
 ## Usage
 
 Open and run the `installation_analysis.ipynb` notebook. The results will be published in the `outputs` folder:
@@ -11,6 +24,18 @@ It can also be executed from the command line as:
 ```bash
 jupyter nbconvert --to html --output outputs/installation_analysis.html --TemplateExporter.exclude_input=True --execute installation_analysis.ipynb
 ```
+
+### From Docker container
+
+#### Using the container
+
+TODO: Interactive execution
+
+TODO: Unattended execution
+
+#### Developing from the container
+
+TODO:
 
 ### Unattended execution
 
@@ -35,12 +60,12 @@ TBC.
 <!-- Default behaviours can be changed by setting specific environment variables:
 
 - `INPUTS_FOLDER`: Folder where input data is located.
-  - If not set, it will be the `etl_outputs` subfolder.
+  - If not set, it will be the `inputs` subfolder.
 - `OUTPUTS_FOLDER`: Folder to save results.
-  - If not set, it will use the `report_outputs` subfolder.
+  - If not set, it will use the `outputs` subfolder.
 - `SKIP_EXPORT_TO_HTML`: If set, the Notebook is not exported to HTML. -->
 
-## Main generated dataframes
+## ANNEX: Main generated dataframes
 
 ### Basic dataframes
 
@@ -226,3 +251,4 @@ TBC.
 - `installation_type`.
 - `osm_unhealthy`: Type of unhealthy state reported.
 - `count`.
+
