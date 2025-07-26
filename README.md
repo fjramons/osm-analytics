@@ -77,12 +77,18 @@ In case we needed to build them locally:
 # Option A) Normal build
 docker build -t ${FULL_IMAGE_NAME} .
 # Option B) Build with non-pinned dependencies
-docker build -t ${FULL_IMAGE_NAME} --build-arg ENVFILE=environment-docker.yml .
+# docker build -t ${FULL_IMAGE_NAME} --build-arg ENVFILE=environment-docker.yml .
 # Option C) Build including Jupyter Lab
 docker build -t ${FULL_DEV_IMAGE_NAME} --build-arg DEVELOPMENT=true .
 ```
 
-Now we should be ready to launch the container. For instance, to invoke the development version of the container to become our local Jupyter server, we could type:
+Now we should be ready to launch the container.
+
+### Use of the container for development
+
+For code editors supporting the _dev containers_ specification (e.g., VSCode), we might use the existing specification in the repo to launch the base container as development platform. **This is option is highly recommended**.
+
+Alternatively, in case we wanted to invoke the _development_ version of the container to become our local Jupyter server, we could type:
 
 ```bash
 docker run --rm -it \
@@ -95,4 +101,3 @@ docker run --rm -it \
         --no-browser --allow-root
 ```
 
-In addition, for code editors supporting the _dev containers_ specification (e.g., VSCode), you might use the existing specification in the repo to launch the base container as development platform. **This is highly recommended**.
