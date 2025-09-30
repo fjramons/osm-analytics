@@ -19,9 +19,9 @@ dependencies:
   - brotli-python=1.0.9=py313h6a678d5_9
   - bzip2=1.0.8=h5eee18b_6
   - c-ares=1.19.1=h5eee18b_0
-  - ca-certificates=2025.2.25=h06a4308_0
+  - ca-certificates=2025.9.9=h06a4308_0
   - cairo=1.16.0=he5ede1b_6
-  - certifi=2025.7.14=py313h06a4308_0
+  - certifi=2025.8.3=py313h06a4308_0
   - cffi=1.17.1=py313h1fdaa30_1
   - charset-normalizer=3.3.2=pyhd3eb1b0_0
   - comm=0.2.1=py313h06a4308_0
@@ -81,6 +81,7 @@ dependencies:
   - libev=4.33=h7f8727e_1
   - libffi=3.4.4=h6a678d5_1
   - libgcc-ng=11.2.0=h1234567_1
+  - libgfortran=3.0.0=1
   - libgfortran-ng=11.2.0=h00389a5_1
   - libgfortran5=11.2.0=h1234567_1
   - libglib=2.84.2=h37c7471_0
@@ -122,15 +123,17 @@ dependencies:
   - numexpr=2.11.0=py313he3a25fe_0
   - numpy=2.3.1=py313h3d1d590_0
   - numpy-base=2.3.1=py313hc428782_0
+  - openblas=0.3.4=ha44fe06_0
   - openjpeg=2.5.2=h0d4d230_1
   - openpyxl=3.1.5=py313h5eee18b_1
-  - openssl=3.0.16=h5eee18b_0
+  - openssl=3.0.17=h5eee18b_0
   - packaging=24.2=py313h06a4308_0
   - pandas=2.2.3=py313h6a678d5_0
   - pandoc=2.12=h06a4308_3
   - pandocfilters=1.5.0=pyhd3eb1b0_0
   - parso=0.8.4=py313h06a4308_0
   - patsy=1.0.1=py313h06a4308_0
+  - pbr=6.1.1=py313h06a4308_0
   - pcre2=10.42=hebb0a14_1
   - pexpect=4.9.0=py313h06a4308_0
   - pillow=11.3.0=py313hb1c3d2d_0
@@ -158,7 +161,7 @@ dependencies:
   - python=3.13.2=hf623796_100_cp313
   - python-dateutil=2.9.0post0=py313h06a4308_2
   - python-fastjsonschema=2.20.0=py313h06a4308_0
-  - python-jenkins=1.7.0=pyhd3eb1b0_0
+  - python-jenkins=1.8.3=py313h06a4308_0
   - python-tzdata=2025.2=pyhd3eb1b0_0
   - python_abi=3.13=0_cp313
   - pytz=2025.2=py313h06a4308_0
@@ -210,3 +213,4 @@ dependencies:
   - zlib=1.2.13=h5eee18b_1
   - zstandard=0.23.0=py313h2c38b39_1
   - zstd=1.5.6=hc292b87_0
+

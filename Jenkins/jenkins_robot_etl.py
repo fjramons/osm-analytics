@@ -7,12 +7,15 @@ from jenkins_lib import *
 from robot_lib import *
 from sqlalchemy import create_engine
 
-def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
-                                  robot_report = 'tmp_robot_report.xml',
-                                  table_known_builds = 'builds_info',
-                                  table_robot_reports = 'robot_reports',
-                                  table_robot_reports_extended = 'robot_reports_extended'):
-
+def ingest_update_all_jenkins_job(
+        jenkins_server,
+        job_name,
+        database_engine,
+        robot_report = 'tmp_robot_report.xml',
+        table_known_builds = 'builds_info',
+        table_robot_reports = 'robot_reports',
+        table_robot_reports_extended = 'robot_reports_extended'
+    ):
 
     # If there is historical data about former builds of this job, it is retrieved first (otherwise, it should return an empty dataframe):
     try:
@@ -74,8 +77,11 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
             df_new_build_reports_details = pd.concat([df_new_build_reports_details, df_build_report_details], ignore_index=True)
 
             # Adds the build number to the new rows
-            df_new_build_reports.build.fillna(build_number, inplace=True)
-            df_new_build_reports_details.build.fillna(build_number, inplace=True)
+            ## df_new_build_reports.build.fillna(build_number, inplace=True)
+            df_new_build_reports.loc[:, 'build'] = df_new_build_reports.loc[:, 'build'].fillna(build_number)
+            ## df_new_build_reports_details.build.fillna(build_number, inplace=True)
+            df_new_build_reports_details.loc[:, 'build'] = df_new_build_reports_details.loc[:, 'build'].fillna(build_number)
+
 
             # Records the number of tests passed vs. failed
             df_known_builds.loc[this_build_and_job, 'pass_count'] = df_build_report['pass'].sum()
@@ -96,8 +102,10 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
             print('Report unavailable')
 
     # All new rows should come from the same job
-    df_new_build_reports.job.fillna(job_name, inplace=True)
-    df_new_build_reports_details.job.fillna(job_name, inplace=True)
+    ## df_new_build_reports.job.fillna(job_name, inplace=True)
+    df_new_build_reports.loc[:, 'job'] = df_new_build_reports.loc[:, 'job'].fillna(job_name)
+    ## df_new_build_reports_details.job.fillna(job_name, inplace=True)
+    df_new_build_reports_details.loc[:, 'job'] = df_new_build_reports_details.loc[:, 'job'].fillna(job_name)
 
     # Fixes the data types
     df_new_build_reports['build'] = df_new_build_reports.build.astype('int')

@@ -1,0 +1,63 @@
+# This Folder
+HERE="${PWD}"
+
+# Variables to access Jenkins
+URL_JENKINS_SERVER="https://osm.etsi.org/jenkins"
+## Sensitive data
+# JENKINS_USER=
+# JENKINS_PASS=
+
+# Jobs to watch
+JOB_IDS='["master", "v17.0", "v16.0", "v15.0", "v14.0"]'
+JOB_NAMES='["Master branch", "Release SEVENTEEN", "Release SIXTEEN", "Release FIFTEEN", "Release FOURTEEN"]'
+## OSM's defaults - Touch only for other Jenkins servers/jobs
+JOB_IDS_PREFIX='osm-stage_3-merge/'
+LINK_TO_BUILD="https://osm.etsi.org/jenkins/view/Robot%20tests/job/{stage}/job/{branch}/{build}/"
+LINK_TO_REPORT="https://osm.etsi.org/jenkins/view/Robot%20tests/job/{stage}/job/{branch}/{build}/robot/report/report.html"
+
+# Time period to analyse
+TOO_OLD_BUILDS="2023-12-15"
+DAYS_SINCE_TODAY_4_ANALYSIS="21"
+
+# Variables to connect to the database
+ETL_OUTPUTS_FOLDER=etl_outputs
+DATABASE_URI="sqlite:///${ETL_OUTPUTS_FOLDER}/test_executions.db"
+## DATABASE_URI for MySQL (SENSITIVE VALUE)
+# DATABASE_URI="mysql://osm_metrics:${MYSQL_USER_PASSWORD}@127.0.0.1:30306/osm_metrics_db"
+
+# Variables to upload to the FTP server (as needed)
+## OSM's case
+FTP_SERVER="ftp://osm-download.etsi.org"
+REMOTE_BASE_FOLDER="analytics/cicd"
+## FTP_USERNAME=<sensitive>
+## FTP_PASSWORD=<sensitive>
+
+## Flags
+## - If the variable is defined AND is "Yes" or "True" (case insensitive), the flag is true.
+## - If the variable is not defined OR is "No" or "False" (case insensitive), the flag is false.
+#
+SKIP_DATABASE_UPDATE="False"
+SKIP_EXPORT_TO_HTML="False"
+UPLOAD_REPORT="True"
+#
+## NOTE: The default behaviour is that:
+## - The notebook can run any task interactively, i.e.,
+##   - It can update the database
+##   - I can export to HTML directly from one of its cells.
+## - This is ok also fo the script, since, whenever is invoked, it will override both variables to "True", so that it assumes these two tasks instead of the own notebook.
+## - In addition, in case script is invoked interactively, it should try to upload the report to the FTP server
+
+## Folder to save the HTML report (do not touch)
+REPORT_OUTPUTS_FOLDER="report_outputs"
+
+## Other variables to change behaviour (do not touch)
+TABLE_KNOWN_BUILDS="builds_info"
+TABLE_ROBOT_REPORTS="robot_reports"
+TABLE_ROBOT_REPORTS_EXTENDED="robot_reports_extended"
+
+## REMINDER: SECRET VALUES:
+## Sourcing this file is expected to load the contents of:
+## - `FTP_USERNAME`
+## - `FTP_PASSWORD`
+## - (optionally) `DATABASE_URI` if it includes a database password
+# source ../.env
