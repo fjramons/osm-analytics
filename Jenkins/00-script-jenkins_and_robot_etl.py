@@ -7,6 +7,7 @@
 
 # %%
 import os
+from dotenv import load_dotenv
 import pandas as pd
 import numpy as np
 import jenkins
@@ -37,17 +38,7 @@ dump_all_as_spreadsheets = False
 
 # %%
 # If the '.env' file exists, loads the environment variables
-try:
-    with open('.env', 'r', encoding='utf-8') as f:
-        for line in f:
-            if line.startswith('#'):
-                continue
-            line = line.strip()
-            key, value = line.split('=')
-            os.environ[key] = value
-except FileNotFoundError as e:
-    # print("Environment file ('.env') does not exist. Skipping...")
-    pass
+load_dotenv();
 
 
 # %%
@@ -69,23 +60,12 @@ table_robot_reports_extended = os.environ.get('TABLE_ROBOT_REPORTS_EXTENDED', No
 # 2. Populates the database with all builds from a set of relevant jobs
 
 # %%
-# relevant_jobs = [
-#     'osm-stage_3-merge/master',
-#     'osm-stage_3-merge/v9.0',
-#     'osm-stage_3-merge/v10.0',
-#     'osm-stage_3-merge/v11.0',
-#     'osm-stage_3-merge/v12.0',
-#     'osm-stage_3-merge/v13.0',
-#     'osm-stage_3-merge/v14.0',
-#     'osm-stage_3-merge/v15.0',
-#     'osm-stage_3-merge/v16.0',
-#     'osm-stage_3-merge/v17.0',
-# ]
 job_ids_prefix = 'osm-stage_3-merge/'
 job_ids_prefix = os.environ.get('JOB_IDS_PREFIX', None) or job_ids_prefix
 
 job_ids = ['master', 'v17.0', 'v16.0', 'v15.0', 'v14.0']
 temp_job_ids = os.environ.get('JOB_IDS', None)
+
 if temp_job_ids:
     job_ids = json.loads(temp_job_ids.replace("'", ""))
 
@@ -113,6 +93,7 @@ engine = create_engine(database_uri)
 
 
 # %%
+print(f"Getting new builds from: {', '.join(relevant_jobs)}")
 for job in relevant_jobs:
     ingest_update_all_jenkins_job(
         jenkins_server=server,
@@ -127,4 +108,4 @@ for job in relevant_jobs:
         table_robot_reports_extended=table_robot_reports_extended
     )
 
-# %%
+print("DONE")

@@ -17,7 +17,8 @@ SOURCE_KEY_FILE=${SOURCE_KEY_FILE:-"${3}"}  # Optional parameter
 FTP_OPTS=${FTP_OPTS:-""}
 
 # Current dir
-dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+# dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+dir="${PWD}"
 
 # Prints relevant information
 echo "FTP server: ${FTP_SERVER}"

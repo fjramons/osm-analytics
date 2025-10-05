@@ -6,6 +6,7 @@ import jenkins
 from jenkins_lib import *
 from robot_lib import *
 from sqlalchemy import create_engine
+import warnings
 
 def ingest_update_all_jenkins_job(
         jenkins_server,
@@ -37,7 +38,13 @@ def ingest_update_all_jenkins_job(
     df_unknown_builds['build'] = new_builds
     df_unknown_builds['job'] = job_name
     df_unknown_builds['timestamp'] = pd.to_datetime(df_unknown_builds.timestamp)
-    df_known_builds = pd.concat([df_known_builds, df_unknown_builds], ignore_index=True)
+    # df_known_builds = pd.concat([df_known_builds, df_unknown_builds], ignore_index=True)
+    df_known_builds = pd.concat(
+        [
+            df.dropna(axis=1, how='all') for df in [df_known_builds, df_unknown_builds]
+        ],
+        ignore_index=True
+    )
 
     # Starts with empty dataframes
     df_new_build_reports = pd.DataFrame(columns=['job', 'build', 'id', 'name', 'source', 'status', 'starttime', 'endtime', 'pass', 'fail', 'failed_test_id', 'failed_test_name', 'failed_keyword'])
@@ -73,15 +80,64 @@ def ingest_update_all_jenkins_job(
             # Retrieves the rows that need to be added the corresponding database table, and appends them
             df_build_report = get_consolidated_results_from_report(robot_report, with_rca=True)
             df_build_report_details = get_detailed_results_from_report(robot_report)
-            df_new_build_reports = pd.concat([df_new_build_reports, df_build_report], ignore_index=True)
-            df_new_build_reports_details = pd.concat([df_new_build_reports_details, df_build_report_details], ignore_index=True)
+            # df_new_build_reports = pd.concat([df_new_build_reports, df_build_report], ignore_index=True)
+            #
+            ## Comment if this behaviour is undesired. Then, see code into the `with` clause that follows
+            df_new_build_reports = pd.concat(
+                [
+                    df.dropna(axis=1, how='all') for df in [df_new_build_reports, df_build_report]
+                ],
+                ignore_index=True
+            )
+            #####################################################################33
+
+            # df_new_build_reports_details = pd.concat([df_new_build_reports_details, df_build_report_details], ignore_index=True)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    category=FutureWarning,
+                    message="The behavior of DataFrame concatenation with empty or all-NA entries is deprecated*"
+                )
+
+                # Use only if this behaviour is desired also for the previous dataframe:
+                # ---------------------------------------------------------------------
+                # df_new_build_reports = pd.concat(
+                #     [df_new_build_reports, df_build_report],
+                #     ignore_index=True
+                # )
+
+                df_new_build_reports_details = pd.concat(
+                    [df_new_build_reports_details, df_build_report_details],
+                    ignore_index=True
+                )
 
             # Adds the build number to the new rows
             ## df_new_build_reports.build.fillna(build_number, inplace=True)
-            df_new_build_reports.loc[:, 'build'] = df_new_build_reports.loc[:, 'build'].fillna(build_number)
-            ## df_new_build_reports_details.build.fillna(build_number, inplace=True)
-            df_new_build_reports_details.loc[:, 'build'] = df_new_build_reports_details.loc[:, 'build'].fillna(build_number)
+            # df_new_build_reports.loc[:, 'build'] = df_new_build_reports.loc[:, 'build'].fillna(build_number)
+            ## Ensures the column exists, even empty
+            if 'build' not in df_new_build_reports.columns:
+                # df_new_build_reports['build'] = pd.NA
+                df_new_build_reports['build'] = np.nan
+            ## Fills values accordingly
+            df_new_build_reports.loc[:, 'build'] = (
+                df_new_build_reports.loc[:, 'build']
+                .astype('object')
+                .infer_objects(copy=False)
+                .fillna(build_number)
+            )
 
+            ## df_new_build_reports_details.build.fillna(build_number, inplace=True)
+            # df_new_build_reports_details.loc[:, 'build'] = df_new_build_reports_details.loc[:, 'build'].fillna(build_number)
+            ## Ensures the column exists, even empty
+            if 'build' not in df_new_build_reports_details.columns:
+                df_new_build_reports_details['build'] = pd.NA
+            ## Fills values accordingly
+            df_new_build_reports_details.loc[:, 'build'] = (
+                df_new_build_reports_details.loc[:, 'build']
+                .astype('object')
+                .infer_objects(copy=False)
+                .fillna(build_number)
+            )
 
             # Records the number of tests passed vs. failed
             df_known_builds.loc[this_build_and_job, 'pass_count'] = df_build_report['pass'].sum()
@@ -102,10 +158,32 @@ def ingest_update_all_jenkins_job(
             print('Report unavailable')
 
     # All new rows should come from the same job
+
     ## df_new_build_reports.job.fillna(job_name, inplace=True)
-    df_new_build_reports.loc[:, 'job'] = df_new_build_reports.loc[:, 'job'].fillna(job_name)
+    # df_new_build_reports.loc[:, 'job'] = df_new_build_reports.loc[:, 'job'].fillna(job_name)
+    ## Ensures the column exists, even empty
+    if 'job' not in df_new_build_reports.columns:
+        df_new_build_reports['job'] = pd.NA
+    ## Fills values accordingly
+    df_new_build_reports.loc[:, 'job'] = (
+        df_new_build_reports.loc[:, 'job']
+        .astype('object')
+        .infer_objects(copy=False)
+        .fillna(job_name)
+    )
+
     ## df_new_build_reports_details.job.fillna(job_name, inplace=True)
-    df_new_build_reports_details.loc[:, 'job'] = df_new_build_reports_details.loc[:, 'job'].fillna(job_name)
+    # df_new_build_reports_details.loc[:, 'job'] = df_new_build_reports_details.loc[:, 'job'].fillna(job_name)
+    ## Ensures the column exists, even empty
+    if 'job' not in df_new_build_reports_details.columns:
+        df_new_build_reports_details['job'] = pd.NA
+    ## Fills values accordingly
+    df_new_build_reports_details.loc[:, 'job'] = (
+        df_new_build_reports_details.loc[:, 'job']
+        .astype('object')
+        .infer_objects(copy=False)
+        .fillna(job_name)
+    )
 
     # Fixes the data types
     df_new_build_reports['build'] = df_new_build_reports.build.astype('int')

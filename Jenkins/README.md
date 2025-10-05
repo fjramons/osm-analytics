@@ -72,6 +72,9 @@ REMOTE_BASE_FOLDER="analytics/cicd"
 ## FTP_USERNAME=<sensitive>
 ## FTP_PASSWORD=<sensitive>
 
+# Time zone to timestamp the reports
+TIME_ZONE="Europe/Paris"
+
 ## Flags
 ## - If the variable is defined AND is "Yes" or "True" (case insensitive), the flag is true.
 ## - If the variable is not defined OR is "No" or "False" (case insensitive), the flag is false.
@@ -109,13 +112,13 @@ TABLE_ROBOT_REPORTS_EXTENDED="robot_reports_extended"
 As shortcut, you can simply define the docker image name and source these two files for development purposes:
 
 ```bash
-# Image name
+# Loads sensible defaults for required environment variables
 OSM_ANALYTICS_IMAGE=${OSM_ANALYTICS_IMAGE:-"osm-analytics"}
 DOCKER_REPO=${DOCKER_REPO:-"ttl.sh"}
 DOCKER_SDK_TAG=${DOCKER_SDK_TAG:-"24h"}
 FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_SDK_TAG}
 
-# Loads sensitive defaults for required environment variables
+# Image name
 # set -a
 source init-dev.rc
 source ../.env
@@ -132,6 +135,7 @@ docker run --rm -it \
   --tmpfs /osm-analytics/Jenkins/inputs \
   -v "${HERE}/${ETL_OUTPUTS_FOLDER}":/osm-analytics/Jenkins/etl_outputs \
   -v "${HERE}/${REPORT_OUTPUTS_FOLDER}":/osm-analytics/Jenkins/report_outputs \
+  -e TZ="${TZ:-"${TIME_ZONE}"}" \
   -e URL_JENKINS_SERVER="${URL_JENKINS_SERVER}" \
   -e JOB_IDS="${JOB_IDS}" \
   -e JOB_NAMES="${JOB_NAMES}" \
@@ -221,6 +225,7 @@ docker run --rm -it \
   --tmpfs /osm-analytics/Jenkins/inputs \
   -v "${HERE}/${ETL_OUTPUTS_FOLDER}":/osm-analytics/Jenkins/etl_outputs \
   -v "${HERE}/${REPORT_OUTPUTS_FOLDER}":/osm-analytics/Jenkins/report_outputs \
+  -e TZ="${TZ:-"${TIME_ZONE}"}" \
   -e URL_JENKINS_SERVER="${URL_JENKINS_SERVER}" \
   -e JOB_IDS="${JOB_IDS}" \
   -e JOB_NAMES="${JOB_NAMES}" \

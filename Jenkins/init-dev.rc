@@ -1,6 +1,9 @@
 # This Folder
 HERE="${PWD}"
 
+# Time zone to timestamp the reports
+TIME_ZONE="Europe/Paris"
+
 # Variables to access Jenkins
 URL_JENKINS_SERVER="https://osm.etsi.org/jenkins"
 ## Sensitive data
@@ -8,8 +11,8 @@ URL_JENKINS_SERVER="https://osm.etsi.org/jenkins"
 # JENKINS_PASS=
 
 # Jobs to watch
-JOB_IDS='["master", "v17.0", "v16.0", "v15.0", "v14.0"]'
-JOB_NAMES='["Master branch", "Release SEVENTEEN", "Release SIXTEEN", "Release FIFTEEN", "Release FOURTEEN"]'
+JOB_IDS='["master", "v18.0", "v17.0", "v16.0", "v14.0"]'
+JOB_NAMES='["Master branch", "Release EIGHTEEN", "Release SEVENTEEN", "Release SIXTEEN", "Release FOURTEEN"]'
 ## OSM's defaults - Touch only for other Jenkins servers/jobs
 JOB_IDS_PREFIX='osm-stage_3-merge/'
 LINK_TO_BUILD="https://osm.etsi.org/jenkins/view/Robot%20tests/job/{stage}/job/{branch}/{build}/"
