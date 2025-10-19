@@ -2,7 +2,12 @@
 
 ## Introduction
 
-TODO:
+OSM Analytics is a set of tools and scripts to analyze statistics from development tools of Open Source MANO (ETSI OSM). It includes functionalities for data extraction, transformation, and visualization for its main tools:
+
+- CI/CD based on Jenkins and E2E test results based on Robot Framework.
+- Bug tracking based on Bugzilla.
+- Download statistics of the different OSM releases.
+- License compliance based on FOSSA data.
 
 ## Installation
 
