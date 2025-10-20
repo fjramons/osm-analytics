@@ -300,3 +300,4 @@ Default behaviours can be changed by setting specific environment variables:
   - If not set, the following list will be used: `['Master branch', 'Release SIXTEEN', 'Release FIFTEEN', 'Release FOURTEEN']`
 - `FIRST_DATE`: If defined, it is used to define the oldest date considered in the charts of the report. When defined, it overrides the window defined by `DAYS_SINCE_TODAY_4_ANALYSIS`.
 - `LAST_DATE`: If defined, it is used to define the latest date considered in the charts of the report. If not defined, it will be set to the current day (`today`).
+
