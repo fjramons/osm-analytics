@@ -1,5 +1,12 @@
 FROM continuumio/miniconda3:25.3.1-1
 
+# OpenContainers labels
+LABEL org.opencontainers.image.authors="Francisco-Javier Ramón Salguero"
+LABEL org.opencontainers.image.source=https://github.com/fjramons/osm-analytics
+LABEL org.opencontainers.image.title="OSM Analytics"
+LABEL org.opencontainers.image.description="OSM Analytics is a set of tools and scripts to analyze statistics from development tools of ETSI OSM, but which are suitable for other projects with the same tooling"
+LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
+
 # To allow scripts to identify if running from a container
 ENV IN_CONTAINER=true
 

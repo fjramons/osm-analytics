@@ -112,17 +112,17 @@ TABLE_ROBOT_REPORTS_EXTENDED="robot_reports_extended"
 As shortcut, you can simply define the docker image name and source these two files for development purposes:
 
 ```bash
-# Loads sensible defaults for required environment variables
+# Load all required environment variables
+# set -a
+source init-dev.rc
+[ -f ../.env ] && source ../.env || echo ".env file does not exist. Skipping..."
+# set +a
+
+# Image name
 OSM_ANALYTICS_IMAGE=${OSM_ANALYTICS_IMAGE:-"osm-analytics"}
 DOCKER_REPO=${DOCKER_REPO:-"ttl.sh"}
 DOCKER_SDK_TAG=${DOCKER_SDK_TAG:-"24h"}
 FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_SDK_TAG}
-
-# Image name
-# set -a
-source init-dev.rc
-source ../.env
-# set +a
 ```
 
 #### Option A) Interactive execution (testing only)

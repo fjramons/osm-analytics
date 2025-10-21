@@ -20,7 +20,7 @@
 
 ## 0. Introduction
 
-OSM Analytics is a set of tools and scripts to analyze statistics from development tools of Open Source MANO (ETSI OSM). It includes functionalities for data extraction, transformation, and visualization for its main tools:
+OSM Analytics is a set of tools and scripts to analyze statistics from development tools of Open Source MANO (ETSI OSM), but which are suitable for other projects using the same tooling. It includes functionalities for data extraction, transformation, and visualization for its main tools:
 
 - CI/CD based on Jenkins and E2E test results based on Robot Framework.
 - Bug tracking based on Bugzilla.
@@ -206,6 +206,8 @@ First, we will set the container names for regular execution and development:
 
 ```bash
 # Base names (CHANGE AS NEEDED)
+## Source environment variables in case we had release names there
+[ -f .env ] && source .env || echo ".env file does not exist. Skipping..."
 OSM_ANALYTICS_IMAGE=${OSM_ANALYTICS_IMAGE:-"osm-analytics"}
 DOCKER_REPO=${DOCKER_REPO:-"ttl.sh"}
 DOCKER_SDK_TAG=${DOCKER_SDK_TAG:-"24h"}
@@ -230,6 +232,14 @@ docker build -t ${FULL_IMAGE_NAME} .
 # docker build -t ${FULL_IMAGE_NAME} --build-arg ENVFILE=environment-docker.yml .
 # Option C) Build including Jupyter Lab
 docker build -t ${FULL_DEV_IMAGE_NAME} --build-arg DEVELOPMENT=true .
+```
+
+In case we wanted to push it as a release:
+
+```bash
+# Assuming we have GHCR_PAT and USERNAME set in the environment
+echo ${GHCR_PAT} | docker login ghcr.io -u ${USERNAME} --password-stdin
+docker push ${FULL_IMAGE_NAME}
 ```
 
 Now we should be ready to launch the container.
