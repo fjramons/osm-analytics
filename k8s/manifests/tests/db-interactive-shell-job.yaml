@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: myshell
+  namespace: database
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: mysql-shell
+        image: mysql:9.5.0
+        command: ["bash"]
+        tty: true
+        stdin: true
+        envFrom:
+        - secretRef:
+            name: osm-metrics
+

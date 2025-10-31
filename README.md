@@ -7,16 +7,19 @@
       - [**Step 1.** Prepare folder structure and clone this repo](#step-1-prepare-folder-structure-and-clone-this-repo)
       - [**Step 2.** Setup of a Kubernetes cluster](#step-2-setup-of-a-kubernetes-cluster)
       - [**Step 3.** Fill-in files with key configuration parameters](#step-3-fill-in-files-with-key-configuration-parameters)
-      - [**Step 4.** Deploy Argo WorkFlows CRDs and operators](#step-4-deploy-argo-workflows-crds-and-operators)
-      - [**Step 5.** Deploy the MySQL database using the helm chart](#step-5-deploy-the-mysql-database-using-the-helm-chart)
-      - [**Step 6.** Deploy workflow templates](#step-6-deploy-workflow-templates)
-      - [**Step 7.** (optional) Test workflow templates using sample workflow](#step-7-optional-test-workflow-templates-using-sample-workflow)
-      - [**Step 8.** Deploy scheduled workflows using `CronWorkflows`](#step-8-deploy-scheduled-workflows-using-cronworkflows)
+      - [**Step 4.** Deploy Kustomization](#step-4-deploy-kustomization)
+      - [**Step 5.** (optional) Pre-populate the database with data of former Jenkins builds (if applicable)](#step-5-optional-pre-populate-the-database-with-data-of-former-jenkins-builds-if-applicable)
+      - [**Step 6.** (optional) Test workflow templates using sample workflow](#step-6-optional-test-workflow-templates-using-sample-workflow)
     - [1.2 Standalone over VM or server](#12-standalone-over-vm-or-server)
       - [1.2.1 Default installation](#121-default-installation)
       - [1.2.2 Manual installation (advanced)](#122-manual-installation-advanced)
   - [3. Docker execution](#3-docker-execution)
     - [Use of the container for development](#use-of-the-container-for-development)
+  - [ANNEX A: Database debugging](#annex-a-database-debugging)
+    - [A.1 Check if the database is up and accesible](#a1-check-if-the-database-is-up-and-accesible)
+    - [A.2 Re-run database provisioning job](#a2-re-run-database-provisioning-job)
+    - [A.3 **DANGEROUS:** Revert all provisioning, by removing the database and the new user](#a3-dangerous-revert-all-provisioning-by-removing-the-database-and-the-new-user)
+    - [A.4 Interactive debugging](#a4-interactive-debugging)
 
 ## 0. Introduction
 
@@ -36,9 +39,9 @@ Outline:
 1. Prepare an appropriate folder structure and clone this repo.
 2. Setup a Kubernetes cluster.
 3. Fill-in files with key configuration parameters:
+   - `db-credentials.env`: Credentials for accessing the database where historical builds and analysis are accumulated.
    - `ftp-credentials.env`: Credentials for the FTP server where reports are saved.
    - `jenkins-credentials.env`: Credentials for accessing Jenkins API.
-   - `db-credentials.env`: Credentials for accessing the database where historical builds and analysis are accumulated.
    - `installations-config.env`: General configuration parameters for the analysis of installations.
    - `bugzilla-config.env`: General configuration parameters for the analysis of bugs.
    - `jenkins-config.env`: General configuration parameters for the analysis of CI/CD builds.
@@ -85,7 +88,9 @@ In case you are given a VM or server, you might want to use a lightweight Kubern
 
 ```bash
 # Update accordingly
-export VMS_K8S_IP="your.vm.ip.address.here"
+## In case it exists
+source ../.credentials/k8s_vms_info.rc || true
+export VMS_K8S_IP=${VMS_K8S_IP:-"your.vm.ip.address.or.fqdn.here"}
 export VMS_K8S_NAME=${VMS_K8S_NAME:-"osm-analytics"}
 
 # Recommended: disable Traefik installation
@@ -112,15 +117,19 @@ kubectl get nodes
 
 #### **Step 3.** Fill-in files with key configuration parameters
 
-`ftp-credentials.env`: Credentials for the FTP server where reports are saved.
+- `db-credentials.env`: (**sensitive file**) Credentials for accessing the database where historical builds and analysis are accumulated. Required keys are:
+  - `rootUser`: Username of the InnoDBCluster root user.
+  - `rootPassword`: Password of the InnoDBCluster root user.
+  - `stdUser`: Username of the standard user for accessing the database.
+  - `stdPassword`: Password of the standard user for accessing the database.
 
 TODO:
 
-`jenkins-credentials.env`: Credentials for accessing Jenkins API.
+`ftp-credentials.env`: (**sensitive file**) Credentials for the FTP server where reports are saved.
 
 TODO:
 
-`db-credentials.env`: Credentials for accessing the database where historical builds and analysis are accumulated.
+`jenkins-credentials.env`: (**sensitive file**) Credentials for accessing Jenkins API.
 
 TODO:
 
@@ -134,23 +143,45 @@ TODO:
 
 `jenkins-config.env`: General configuration parameters for the analysis of CI/CD builds.
 
-#### **Step 4.** Deploy Argo WorkFlows CRDs and operators
+#### **Step 4.** Deploy Kustomization
+
+This Kustomization will deploy:
+
+- Argo WorkFlows CRDs and operators.
+- Deploy the MySQL database using the helm chart.
+- Deploy workflow templates.
+- Deploy scheduled workflows using `CronWorkflows`.
+- All the Secrets and ConfigMaps that need to be generated to fully configure all resources above.
+
+```bash
+# First, install all CRDs
+kubectl apply -k ./k8s/manifests/crds/
+
+# Then, install all resources
+kubectl kustomize --load-restrictor LoadRestrictionsNone ./k8s/manifests/overlay | kubectl apply -f -
+```
+
+(optional) Check that the resources are properly created and the database provisioned:
+
+```bash
+# Wait for readiness of the database pods and provisioning job completion
+watch kubectl get pod -n database
+
+# Check that the database was created and is accessible with the provisioned user (the job should complete successfully)
+kubectl apply -f ./k8s/manifests/tests/db-provisioning-check.yaml
+kubectl get job/db-provisioning-check -n database
+kubectl logs job/db-provisioning-check -n database
+kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
+
+## To remove everything
+# kubectl kustomize --load-restrictor LoadRestrictionsNone ./k8s/manifests/overlay | kubectl delete -f -
+```
+
+#### **Step 5.** (optional) Pre-populate the database with data of former Jenkins builds (if applicable)
 
 TODO:
 
-#### **Step 5.** Deploy the MySQL database using the helm chart
-
-TODO:
-
-#### **Step 6.** Deploy workflow templates
-
-TODO:
-
-#### **Step 7.** (optional) Test workflow templates using sample workflow
-
-TODO:
-
-#### **Step 8.** Deploy scheduled workflows using `CronWorkflows`
+#### **Step 6.** (optional) Test workflow templates using sample workflow
 
 TODO:
 
@@ -259,5 +290,90 @@ docker run --rm -it \
         --ip='*' \
         --port=8888 \
         --no-browser --allow-root
+```
+
+## ANNEX A: Database debugging
+
+### A.1 Check if the database is up and accesible
+
+```bash
+# Retrieve root password
+export DB_ROOT_PASSWORD=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.rootPassword}" \
+  | base64 --decode
+)
+echo ${DB_ROOT_PASSWORD}
+
+# Using official MySQL client image, any namespace
+# NOTE: You may need to press ENTER to see the prompt
+kubectl run --rm -it myshell \
+  --image=mysql:9.5.0 \
+  -n workflow-runs \
+  --env="DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}" \
+  -- mysql -h osm-metrics.database.svc.cluster.local -u root -p"${DB_ROOT_PASSWORD}"
+
+# ALTERNATIVE: Using Oracle's operator image, any namespace
+kubectl run --rm -it myshell \
+  --image=container-registry.oracle.com/mysql/community-operator \
+  -n workflow-runs \
+  --env="DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}" \
+  -- mysqlsh --password="${DB_ROOT_PASSWORD}" root@osm-metrics.database.svc.cluster.local
+```
+
+### A.2 Re-run database provisioning job
+
+This job provisions the database by:
+
+- Creating the user.
+- Creating the database (empty).
+- Granting privileges to the user over the database.
+
+```bash
+# Re-create the job for unattended execution
+kubectl delete job/db-provisioning -n database || true
+kubectl apply -f ./k8s/manifests/tests/db-provisioning-job.yaml
+
+# Check execution
+kubectl get job -n database
+kubectl logs job/db-provisioning -n database
+kubectl describe job/db-provisioning -n database
+```
+
+### A.3 **DANGEROUS:** Revert all provisioning, by removing the database and the new user
+
+```bash
+kubectl apply -f ./k8s/manifests/tests/db-DELETE-provisioning-job.yaml
+db-provisioning-delete
+kubectl get job -n database
+kubectl logs job/db-provisioning-delete -n database
+kubectl describe job/db-provisioning-delete -n database
+kubectl delete job/db-provisioning-delete -n database
+```
+
+Now we would be ready to re-run the provisioning job again if needed (see previous section).
+
+### A.4 Interactive debugging
+
+Example: List the tables in the database:
+
+```bash
+# First create a temporary job that mounts the secret with the credentials and then attach to it to run commands interactively
+kubectl apply -f ./k8s/manifests/tests/db-interactive-shell-job.yaml
+kubectl attach -it job/myshell -n database
+
+# --------------- Inside the container ---------------
+## Undo any provisioning if needed
+mysql -h osm-metrics.database.svc.cluster.local -u "${stdUser}" -p"${stdPassword}"
+# mysql -h osm-metrics.database.svc.cluster.local -u "${rootUser}" -p"${rootPassword}"
+USE osm_metrics_db;
+SHOW TABLES;
+exit;
+exit
+# ----------------------------------------------------
+
+# When the temporary job is no longer needed, delete it
+kubectl delete job/myshell -n database
 ```
 

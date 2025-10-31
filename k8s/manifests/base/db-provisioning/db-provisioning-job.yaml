@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-provisioning
+  namespace: database
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mysql-shell
+        image: mysql:9.5.0
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          echo -e "[client]\nuser=${rootUser}\npassword=${rootPassword}" | \
+          mysql --defaults-file=/dev/stdin -h osm-metrics.database.svc.cluster.local -e "
+            CREATE DATABASE IF NOT EXISTS osm_metrics_db;
+            CREATE USER IF NOT EXISTS '${stdUser}'@'%' IDENTIFIED BY '${stdPassword}';
+            GRANT ALL PRIVILEGES ON osm_metrics_db.* TO '${stdUser}'@'%';
+            FLUSH PRIVILEGES;
+          "
+        envFrom:
+        - secretRef:
+            name: osm-metrics
+

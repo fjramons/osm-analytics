@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-provisioning-check
+  namespace: database
+spec:
+  template:
+    spec:
+      # To ease debugging, we set restartPolicy to Never
+      restartPolicy: Never
+      # restartPolicy: OnFailure
+      containers:
+      - name: mysql-shell
+        image: mysql:9.5.0
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          echo -e "[client]\nuser=${stdUser}\npassword=${stdPassword}" | \
+          mysql --defaults-file=/dev/stdin -h osm-metrics.database.svc.cluster.local -e "
+            USE osm_metrics_db;
+            SHOW TABLES;
+          "
+        envFrom:
+        - secretRef:
+            name: osm-metrics
+
