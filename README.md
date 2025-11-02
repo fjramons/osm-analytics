@@ -120,31 +120,64 @@ kubectl get nodes
 
 #### **Step 3.** Fill-in files with key configuration parameters
 
-- `db-credentials.env`: (**sensitive file**) Credentials for accessing the database where historical builds and analysis are accumulated. Required keys are:
+First, copy all templates for environment variables to be filled-in to the `.credentials` folder:
+
+```bash
+cp -i k8s/manifests/env-templates/* ../.credentials/
+```
+
+Then, fill-in all the required parameters in each of the following files:
+
+- **`db-credentials.env`**: (**sensitive file**) Credentials for accessing the database where historical builds and analysis are accumulated. Required keys are:
   - `rootUser`: Username of the InnoDBCluster root user.
   - `rootPassword`: Password of the InnoDBCluster root user.
   - `stdUser`: Username of the standard user for accessing the database.
   - `stdPassword`: Password of the standard user for accessing the database.
+- **`ftp-credentials.env`**: (**sensitive file**) Credentials for the FTP server where reports are saved.
+  - `FTP_SERVER`: Url of the FTP server to upload the reports. Note that the format should be `ftp://<server_address>`.
+  - `FTP_USERNAME`: FTP user for analytics.
+  - `FTP_PASSWORD`: Password of the FTP user.
+  - **NOTE:** The `REMOTE_BASE_FOLDER` is not defined here, since it may vary depending on the type of analysis (CI/CD, installations, bugs). It will be defined in the corresponding `ConfigMap` for each analysis type.
+- **`jenkins-credentials.env`**: (**sensitive file**) Credentials for accessing Jenkins API.
+  - `URL_JENKINS_SERVER`: Base URL of your Jenkins server.
+  - `DATABASE_URI`: Metrics database URL with authentication. The format is likely to follow this format:
 
-TODO:
+    ```python
+    "mysql+pymysql://${MYSQL_USER}:${MYSQL_USER_PASSWORD}@osm-metrics.database.svc.cluster.local:3306/osm_metrics_db"
+    ```
 
-`ftp-credentials.env`: (**sensitive file**) Credentials for the FTP server where reports are saved.
-
-TODO:
-
-`jenkins-credentials.env`: (**sensitive file**) Credentials for accessing Jenkins API.
-
-TODO:
-
-`installations-config.env`: General configuration parameters for the analysis of installations.
-
-TODO:
-
-`bugzilla-config.env`: General configuration parameters for the analysis of bugs.
-
-TODO:
-
-`jenkins-config.env`: General configuration parameters for the analysis of CI/CD builds.
+    Where `${MYSQL_USER}` and `${MYSQL_USER_PASSWORD}` should be replaced by the same values set for `stdUser` and `stdPassword` at `db-credentials.env`, respectively.
+- **`installations-config.env`**: General configuration parameters for the analysis of installations.
+  - `UPLOAD_REPORT`: Whether to upload the report to an FTP server. Possible values: `YES` or `NO`.
+  - `REMOTE_BASE_FOLDER`: FTP subfolder to upload the report.
+  - `TZ`: Time zone to timestamp the reports.
+  - `OUTPUTS_FOLDER`: Local folder to save the report. Sensible default: `outputs`.
+  - `KEY_FILE_NAME`: Name of the HTML file generated with the report. Sensible default: `installation_analysis.html`.
+- **`bugzilla-config.env`**: General configuration parameters for the analysis of bugs.
+  - `UPLOAD_REPORT`: Whether to upload the report to an FTP server. Possible values: `YES` or `NO`.
+  - `REMOTE_BASE_FOLDER`: FTP subfolder to upload the report.
+  - `TZ`: Time zone to timestamp the reports.
+  - `OUTPUTS_FOLDER`: Local folder to save the report. Sensible default: `outputs`.
+  - `KEY_FILE_NAME`: Name of the HTML file generated with the report. Sensible default: `bugzilla_analysis.html`.
+- **`jenkins-config.env`**: General configuration parameters for the analysis of CI/CD builds.
+  - `UPLOAD_REPORT`: Whether to upload the report to an FTP server. Possible values: `YES` or `NO`.
+  - `REMOTE_BASE_FOLDER`: FTP subfolder to upload the report.
+  - `TZ`: Time zone to timestamp the reports.
+  - `REPORT_OUTPUTS_FOLDER`: Local folder to save the report. Sensible default: `report_outputs`.
+  - `ETL_OUTPUTS_FOLDER`: Local folder to save intermediate ETL results. Sensible default: `etl_outputs`.
+  - `KEY_FILE_NAME`: Name of the HTML file generated with the report. Sensible default: `analysis_of_test_results.html`.
+  - `JOB_IDS`: List of Jenkins job IDs to monitor.
+  - `JOB_NAMES`: List of human-friendly names for the Jenkins jobs to monitor.
+  - `JOB_IDS_PREFIX`: Prefix to be added to each job ID (if applicable).
+  - `LINK_TO_BUILD`: Template link to access each build in the Jenkins server.
+  - `LINK_TO_REPORT`: Template link to access each Robot Framework report in the Jenkins server.
+  - `TOO_OLD_BUILDS`: Date (YYYY-MM-DD) to consider builds older than this date as out-of-scope for the analysis.
+  - `DAYS_SINCE_TODAY_4_ANALYSIS`: Number of days from today to consider builds as in-scope for the analysis.
+  - `SKIP_DATABASE_UPDATE`: Whether to skip the update of the database with new builds from Jenkins. Sensible default: `False`.
+  - `SKIP_EXPORT_TO_HTML`: Whether to skip the export of the analysis to an HTML report. Sensible default: `False`.
+  - `TABLE_KNOWN_BUILDS`: Name of the database table where known builds are stored. Sensible default: `builds_info`.
+  - `TABLE_ROBOT_REPORTS`: Name of the database table where Robot Framework reports are stored. Sensible default: `robot_reports`.
+  - `TABLE_ROBOT_REPORTS_EXTENDED`: Name of the database table where extended Robot Framework reports are stored. Sensible default: `robot_reports_extended`.
 
 #### **Step 4.** Deploy Kustomization
 
@@ -181,8 +214,6 @@ kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
 ```
 
 #### **Step 5.** (optional) Pre-populate the database with data of former Jenkins builds (if applicable)
-
-TODO:
 
 ```bash
 # Retrieve user's credentials

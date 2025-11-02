@@ -6,13 +6,8 @@ resources:
 
 # ---------------------- Generated resources ----------------------
 
-# kubectl create secret generic mypwds \
-#   --from-literal=rootUser=root \
-#   --from-literal=rootHost=% \
-#   --from-literal=rootPassword="supersecretpassword"
-
-# Database credentials
 secretGenerator:
+# Database credentials - `database` namespace
 - name: osm-metrics
   namespace: database
   literals:
@@ -23,3 +18,68 @@ secretGenerator:
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
+
+# Database credentials - `workflow-runs` namespace
+- name: db-credentials
+  namespace: workflow-runs
+  literals:
+  - rootHost=%
+  env: ../../../../.credentials/db-credentials.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# FTP credentials - `workflow-runs` namespace
+- name: ftp-credentials
+  namespace: workflow-runs
+  env: ../../../../.credentials/ftp-credentials.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Jenkins credentials - `workflow-runs` namespace
+- name: jenkins-credentials
+  namespace: workflow-runs
+  env: ../../../../.credentials/jenkins-credentials.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+
+configMapGenerator:
+# Jenkins configuration - `workflow-runs` namespace
+- name: jenkins-config
+  namespace: workflow-runs
+  env: ../../../../.credentials/jenkins-config.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Installations configuration - `workflow-runs` namespace
+- name: installations-config
+  namespace: workflow-runs
+  env: ../../../../.credentials/installations-config.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Bugzilla configuration - `workflow-runs` namespace
+- name: bugzilla-config
+  namespace: workflow-runs
+  env: ../../../../.credentials/bugzilla-config.env
+  # Reference above requires using:
+  # kustomize build --load-restrictor LoadRestrictionsNone
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
