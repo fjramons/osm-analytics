@@ -20,6 +20,9 @@
     - [A.2 Re-run database provisioning job](#a2-re-run-database-provisioning-job)
     - [A.3 **DANGEROUS:** Revert all provisioning, by removing the database and the new user](#a3-dangerous-revert-all-provisioning-by-removing-the-database-and-the-new-user)
     - [A.4 Interactive debugging](#a4-interactive-debugging)
+  - [ANNEX B: Database backup and recovery](#annex-b-database-backup-and-recovery)
+    - [B.1 From the old database (VM-based installation)](#b1-from-the-old-database-vm-based-installation)
+    - [B.2 From the new database (Kubernetes-based installation)](#b2-from-the-new-database-kubernetes-based-installation)
 
 ## 0. Introduction
 
@@ -181,6 +184,54 @@ kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
 
 TODO:
 
+```bash
+# Retrieve user's credentials
+export DB_STD_USER=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.stdUser}" \
+  | base64 --decode
+)
+export DB_STD_PASSWORD=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.stdPassword}" \
+  | base64 --decode
+)
+echo ${DB_STD_USER}
+echo ${DB_STD_PASSWORD}
+
+# Create a port-forward to access the database from the client machine
+## (optional) Inspect the service
+kubectl get service/osm-metrics -n database
+## Run the port-forward in background
+SOURCE_DB_PORT=3306
+FWD_DB_PORT=33060
+kubectl port-forward service/osm-metrics -n database ${FWD_DB_PORT}:${SOURCE_DB_PORT} &
+## (optional) Test connection
+mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+exit;
+
+# Import the dump from the backup file
+BACKUP_FILE="../.credentials/backups/osm_metrics_db.sql.gz"
+gzip -d -c "${BACKUP_FILE}" | mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+# gzip -d -c "${BACKUP_FILE}" | mysql -u "${DB_ROOT_USER}" -p"${DB_ROOT_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+
+# (optional) Check that data has been properly imported
+mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+SHOW TABLES;
+SELECT COUNT(*) FROM builds_info;
+SELECT * FROM builds_info LIMIT 5;
+SELECT COUNT(*) FROM robot_reports;
+SELECT * FROM robot_reports LIMIT 5;
+SELECT COUNT(*) FROM robot_reports_extended;
+SELECT * FROM robot_reports_extended LIMIT 5;
+exit;
+
+# Kill port-forward
+pkill -f "kubectl port-forward service/osm-metrics -n database"
+```
+
 #### **Step 6.** (optional) Test workflow templates using sample workflow
 
 TODO:
@@ -297,13 +348,20 @@ docker run --rm -it \
 ### A.1 Check if the database is up and accesible
 
 ```bash
-# Retrieve root password
+# Retrieve root credentials
+export DB_ROOT_USER=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.rootUser}" \
+  | base64 --decode
+)
 export DB_ROOT_PASSWORD=$(
   kubectl get secret/osm-metrics \
     -n database \
     -o jsonpath="{.data.rootPassword}" \
   | base64 --decode
 )
+echo ${DB_ROOT_USER}
 echo ${DB_ROOT_PASSWORD}
 
 # Using official MySQL client image, any namespace
@@ -312,14 +370,14 @@ kubectl run --rm -it myshell \
   --image=mysql:9.5.0 \
   -n workflow-runs \
   --env="DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}" \
-  -- mysql -h osm-metrics.database.svc.cluster.local -u root -p"${DB_ROOT_PASSWORD}"
+  -- mysql -h osm-metrics.database.svc.cluster.local -u "${DB_ROOT_USER}" -p"${DB_ROOT_PASSWORD}"
 
 # ALTERNATIVE: Using Oracle's operator image, any namespace
 kubectl run --rm -it myshell \
   --image=container-registry.oracle.com/mysql/community-operator \
   -n workflow-runs \
   --env="DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}" \
-  -- mysqlsh --password="${DB_ROOT_PASSWORD}" root@osm-metrics.database.svc.cluster.local
+  -- mysqlsh --password="${DB_ROOT_PASSWORD}" "${DB_ROOT_USER}@osm-metrics.database.svc.cluster.local"
 ```
 
 ### A.2 Re-run database provisioning job
@@ -375,5 +433,98 @@ exit
 
 # When the temporary job is no longer needed, delete it
 kubectl delete job/myshell -n database
+```
+
+## ANNEX B: Database backup and recovery
+
+### B.1 From the old database (VM-based installation)
+
+```bash
+# Retrieve root password (user was always `root` in the old installation)
+REMOTE_KUBECONFIG="../.credentials/osm-metrics-OLD-kubeconfig.yaml"
+OLD_DB_ROOT_PASSWORD=$(
+  kubectl get secret mysql-metrics \
+  --namespace default \
+  --kubeconfig="${REMOTE_KUBECONFIG}" \
+  -o jsonpath="{.data.mysql-root-password}" \
+  | base64 --decode
+)
+echo "${OLD_DB_ROOT_PASSWORD}"
+
+# Folder to save backups
+mkdir -p ../.credentials/backups
+
+## Run the port-forward in background
+OLD_SOURCE_DB_PORT=3306
+# OLD_SOURCE_DB_PORT=30306
+OLD_FWD_DB_PORT=30306
+kubectl port-forward service/mysql-metrics \
+  -n default \
+  --kubeconfig="${REMOTE_KUBECONFIG}" \
+  ${OLD_FWD_DB_PORT}:${OLD_SOURCE_DB_PORT} &
+
+## Dump database
+BACKUP_FILE="../.credentials/backups/osm_metrics_db.sql.gz"
+mysqldump -u root -p"${OLD_DB_ROOT_PASSWORD}" -h 127.0.0.1 -P ${OLD_FWD_DB_PORT} osm_metrics_db \
+| gzip > "${BACKUP_FILE}"
+
+# Kill port-forward
+pkill -f "kubectl port-forward service/mysql-metrics"
+```
+
+However, note that this database backup will need some modifications before being used in the new Kubernetes-based installation, which have additional restrictions to comply and requires the addition of `AUTO_INCREMENT PRIMARY KEY` columns in the tables. In order to fix it, we will need to use the script `k8s/tools/modernize-database.sh` to generate an updated database dump:
+
+```bash
+# Create a copy of the original dump file and extract it
+BACKUP_FILE="../.credentials/backups/osm_metrics_db.sql.gz"
+ORIGINAL_BACKUP_FILE="../.credentials/backups/osm_metrics_db_ORIGINAL.sql.gz"
+mv "${BACKUP_FILE}" "${ORIGINAL_BACKUP_FILE}"
+gzip -d --keep "${ORIGINAL_BACKUP_FILE}"
+
+# Postprocess the dump to add the required columns
+./k8s/tools/modernize-database.sh "../.credentials/backups/osm_metrics_db_ORIGINAL.sql" "../.credentials/backups/osm_metrics_db.sql"
+
+# Finally, compress the updated dump and remove the uncompressed version of the original
+gzip ../.credentials/backups/osm_metrics_db.sql
+# gzip --keep ../.credentials/backups/osm_metrics_db.sql
+rm ../.credentials/backups/osm_metrics_db_ORIGINAL.sql
+```
+
+### B.2 From the new database (Kubernetes-based installation)
+
+```bash
+# Retrieve root credentials
+export SOURCE_DB_ROOT_USER=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.rootUser}" \
+  | base64 --decode
+)
+export SOURCE_DB_ROOT_PASSWORD=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.rootPassword}" \
+  | base64 --decode
+)
+echo ${SOURCE_DB_ROOT_USER}
+echo ${SOURCE_DB_ROOT_PASSWORD}
+
+# Folder to save backups
+mkdir -p ../.credentials/backups
+
+# Run the port-forward in background
+SOURCE_DB_PORT=3306
+FWD_DB_PORT=33060
+kubectl port-forward service/osm-metrics -n database ${FWD_DB_PORT}:${SOURCE_DB_PORT} &
+## (optional) Check that the connection is ready and stable
+mysql -u ${SOURCE_DB_ROOT_USER} -p"${SOURCE_DB_ROOT_PASSWORD}" -h 127.0.0.1 -P ${FWD_DB_PORT} osm_metrics_db
+
+## Dump database
+BACKUP_FILE="../.credentials/backups/osm_metrics_db.sql.gz"
+mysqldump -u ${SOURCE_DB_ROOT_USER} -p"${SOURCE_DB_ROOT_PASSWORD}" -h 127.0.0.1 -P ${FWD_DB_PORT} --set-gtid-purged=OFF --single-transaction osm_metrics_db \
+| gzip > "${BACKUP_FILE}"
+
+# Kill port-forward
+pkill -f "kubectl port-forward service/mysql-metrics"
 ```
 
