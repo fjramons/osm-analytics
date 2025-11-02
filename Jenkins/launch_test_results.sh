@@ -33,7 +33,7 @@ if [ -z ${SKIP_ALL_UPDATES} ]; then
     python ./00-script-jenkins_and_robot_etl.py
 
     # Run the Jupyter notebook and export as HTML report
-    jupyter nbconvert --to html --output report_outputs/analysis_of_test_results.html --TemplateExporter.exclude_input=True --execute 01-analysis_of_test_results.ipynb
+    jupyter nbconvert --to html --output "${REPORT_OUTPUTS_FOLDER}/${KEY_FILE_NAME}" --TemplateExporter.exclude_input=True --execute 01-analysis_of_test_results.ipynb
 else
     echo "Skipping report update..."
 fi

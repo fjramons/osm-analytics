@@ -25,10 +25,10 @@ export SKIP_EXPORT_TO_HTML=True
 # Unless explicitly prevented, updates the report
 if [ -z ${SKIP_ALL_UPDATES} ]; then
     # Move former .XLSX spreadsheets to another folder
-    mv outputs/*.xlsx xlsx-outputs/
+    mv ${OUTPUTS_FOLDER}/*.xlsx xlsx-outputs/ || true
 
     # Run the Jupyter notebook and export as HTML report
-    jupyter nbconvert --to html --output outputs/bugzilla_analysis.html --TemplateExporter.exclude_input=True --execute bugzilla_analysis.ipynb
+    jupyter nbconvert --to html --output ${OUTPUTS_FOLDER}/${KEY_FILE_NAME} --TemplateExporter.exclude_input=True --execute bugzilla_analysis.ipynb
 else
     echo "Skipping report update..."
 fi
