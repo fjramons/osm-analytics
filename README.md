@@ -181,7 +181,7 @@ Then, fill-in all the required parameters in each of the following files:
 
 #### **Step 4.** Deploy Kustomization
 
-This Kustomization will deploy:
+These Kustomizations will deploy:
 
 - Argo WorkFlows CRDs and operators.
 - Deploy the MySQL database using the helm chart.
@@ -266,6 +266,30 @@ pkill -f "kubectl port-forward service/osm-metrics -n database"
 #### **Step 6.** (optional) Test workflow templates using sample workflow
 
 TODO:
+
+```bash
+# Check that the WorkflowTemplates exist
+kubectl get WorkFlowTemplate -n workflow-runs
+
+# Submit a workflow to generate the installations report
+argo submit -n workflow-runs --watch ./k8s/manifests/tests/launcher-installations-report.yaml
+## Check logs
+argo logs -n workflow-runs @latest
+argo get -n workflow-runs @latest
+
+# Submit a workflow to generate the Bugzilla report
+# TODO:
+
+# Submit a workflow to generate the Jenkins report
+# TODO:
+
+# List the workflows
+argo list -n workflow-runs
+
+# Acccess the web interface to inspect the workflows
+kubectl -n argo port-forward svc/argo-server 2746:2746
+# Then access <https://localhost:2746> and Ctrl+C when done.
+```
 
 ### 1.2 Standalone over VM or server
 

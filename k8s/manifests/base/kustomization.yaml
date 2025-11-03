@@ -5,7 +5,7 @@ resources:
 - ./argowf
 - ./mysql
 - ./db-provisioning/db-provisioning-job.yaml
-# - TODO: Worflow templates for OSM analytics
+- ./workflow-templates
 # - TODO: CronWorkflows for periodic tasks
 
 transformers:

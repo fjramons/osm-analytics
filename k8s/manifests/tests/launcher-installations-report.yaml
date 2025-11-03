@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: installations-report-
+  namespace: workflow-runs
+spec:
+  workflowTemplateRef:
+    name: installations-report
+  ttlStrategy:
+    # Auto-remove after one hour of finishing
+    ttlSecondsAfterFinished: 3600
+
