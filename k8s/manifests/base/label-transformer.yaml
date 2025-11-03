@@ -1,0 +1,9 @@
+apiVersion: builtin
+kind: LabelTransformer
+metadata:
+  name: add-app-label
+labels:
+  app: osm-analytics
+fieldSpecs:
+  - path: metadata/labels
+    create: true
