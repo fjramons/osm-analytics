@@ -8,5 +8,5 @@ spec:
     name: installations-report
   ttlStrategy:
     # Auto-remove after one hour of finishing
-    ttlSecondsAfterFinished: 3600
+    secondsAfterCompletion: 3600
 
