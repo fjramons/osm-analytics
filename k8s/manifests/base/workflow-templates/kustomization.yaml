@@ -3,3 +3,5 @@ kind: Kustomization
 
 resources:
 - installations-report.yaml
+- bugzilla-report.yaml
+

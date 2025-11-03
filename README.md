@@ -274,11 +274,14 @@ kubectl get WorkFlowTemplate -n workflow-runs
 # Submit a workflow to generate the installations report
 argo submit -n workflow-runs --watch ./k8s/manifests/tests/launcher-installations-report.yaml
 ## Check logs
-argo logs -n workflow-runs @latest
+argo logs -n workflow-runs -f @latest
 argo get -n workflow-runs @latest
 
 # Submit a workflow to generate the Bugzilla report
-# TODO:
+argo submit -n workflow-runs --watch ./k8s/manifests/tests/launcher-bugzilla-report.yaml
+## Check logs
+argo logs -n workflow-runs -f @latest
+argo get -n workflow-runs @latest
 
 # Submit a workflow to generate the Jenkins report
 # TODO:

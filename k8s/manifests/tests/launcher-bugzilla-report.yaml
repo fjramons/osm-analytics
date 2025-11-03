@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bugzilla-report-
+  namespace: workflow-runs
+spec:
+  workflowTemplateRef:
+    name: bugzilla-report
+  ttlStrategy:
+    # Auto-remove after one hour of finishing
+    secondsAfterCompletion: 3600
+

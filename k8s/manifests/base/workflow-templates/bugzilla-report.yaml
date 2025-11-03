@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: bugzilla-report
+  namespace: workflow-runs
+spec:
+  entrypoint: bugzilla-analysis
+  volumes:
+    - name: outputs-tmpfs
+      emptyDir:
+        medium: Memory
+    - name: inputs-tmpfs
+      emptyDir:
+        medium: Memory
+  templates:
+    - name: bugzilla-analysis
+      container:
+        image: ghcr.io/fjramons/osm-analytics:1.0.0
+        command: ["/bin/sh", "-c"]
+        args: ["Bugzilla/launch_bugzilla_analysis.sh"]
+        envFrom:
+          - configMapRef:
+              name: bugzilla-config
+          - secretRef:
+              name: ftp-credentials
+        volumeMounts:
+          - name: outputs-tmpfs
+            mountPath: /osm-analytics/Bugzilla/outputs
+          - name: inputs-tmpfs
+            mountPath: /osm-analytics/Bugzilla/inputs
+
