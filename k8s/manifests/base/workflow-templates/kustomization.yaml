@@ -4,4 +4,5 @@ kind: Kustomization
 resources:
 - installations-report.yaml
 - bugzilla-report.yaml
+- jenkins-report.yaml
 

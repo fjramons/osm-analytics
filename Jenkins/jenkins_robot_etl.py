@@ -6,7 +6,10 @@ import jenkins
 from jenkins_lib import *
 from robot_lib import *
 from sqlalchemy import create_engine
+from sqlalchemy import text
+from sqlalchemy.types import BigInteger, String, Float, DateTime, Integer
 import warnings
+
 
 def ingest_update_all_jenkins_job(
         jenkins_server,
@@ -196,8 +199,118 @@ def ingest_update_all_jenkins_job(
     df_known_builds['pass_count'] = df_known_builds.pass_count.astype('float')
     df_known_builds['fail_count'] = df_known_builds.fail_count.astype('float')
 
-    # Saves the results to the database as a single transaction:
+
+    # --------------------------------------------------------------
+    # Saves the results to the database as a single transaction
+    # --------------------------------------------------------------
+
+    ## OLD CODE:
+    # with database_engine.begin() as conn:
+    #     df_known_builds.to_sql(name=table_known_builds, con=conn, if_exists='replace', index=False)
+    #     df_new_build_reports.to_sql(name=table_robot_reports, con=conn, if_exists='append', index=False)
+    #     df_new_build_reports_details.to_sql(name=table_robot_reports_extended, con=conn, if_exists='append', index=False)
+    ##
+
+    # Converts columns `category` to `str` for each DataFrame
+    ## df_known_builds
+    df_known_builds["build_result"] = df_known_builds["build_result"].astype(str)
+    df_known_builds["test_result"] = df_known_builds["test_result"].astype(str)
+    ## df_new_build_reports
+    df_new_build_reports["status"] = df_new_build_reports["status"].astype(str)
+    ## df_new_build_reports_details
+    df_new_build_reports_details["status"] = df_new_build_reports_details["status"].astype(str)
+
+    # If existing, remove `auto_id` column so that MySQL can generate it automatically
+    if 'auto_id' in df_known_builds.columns:
+        df_known_builds = df_known_builds.drop(columns=['auto_id'])
+
+    # Dtypes for `builds_info`
+    dtype_known_builds = {
+        "job": String(65535),  # TEXT in MySQL allows up to 65535 bytes
+        "build": BigInteger(),
+        "timestamp": DateTime(),
+        "duration": BigInteger(),
+        "build_result": String(65535),
+        "test_result": String(65535),
+        "pass_count": Float(),
+        "fail_count": Float()
+    }
+
+    # Dtypes for `robot_reports`
+    dtype_robot_reports = {
+        "job": String(65535),
+        "build": BigInteger(),
+        "id": String(65535),
+        "name": String(65535),
+        "source": String(65535),
+        "status": String(65535),
+        "starttime": DateTime(),
+        "endtime": DateTime(),
+        "pass": Integer(),
+        "fail": Integer(),
+        "failed_test_id": String(65535),
+        "failed_test_name": String(65535),
+        "failed_keyword": String(65535),
+    }
+
+    # Dtypes for `robot_reports_extended`
+    dtype_robot_reports_extended = {
+        "job": String(65535),
+        "build": String(255),  # Según tu info es object en df_new_build_reports_details, usar varchar(255)
+        "suite_id": String(65535),
+        "suite_name": String(65535),
+        "test_id": String(65535),
+        "test_name": String(65535),
+        "keyword_name": String(65535),
+        "status": String(65535),
+        "starttime": DateTime(),
+        "endtime": DateTime(),
+    }
+
     with database_engine.begin() as conn:
-        df_known_builds.to_sql(name=table_known_builds, con=conn, if_exists='replace', index=False)
-        df_new_build_reports.to_sql(name=table_robot_reports, con=conn, if_exists='append', index=False)
-        df_new_build_reports_details.to_sql(name=table_robot_reports_extended, con=conn, if_exists='append', index=False)
+        # Delete and re-create `builds_info` table with the origina schema and `auto_increment`
+        conn.execute(text(f"DROP TABLE IF EXISTS {table_known_builds}"))
+        conn.execute(text(f"""
+            CREATE TABLE {table_known_builds} (
+                auto_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                job TEXT,
+                build BIGINT,
+                timestamp DATETIME,
+                duration BIGINT,
+                build_result TEXT,
+                test_result TEXT,
+                pass_count DOUBLE,
+                fail_count DOUBLE
+            ) ENGINE=InnoDB;
+        """))
+
+        # Insert data without `auto_id` columns so that MySQL assigns it
+        df_known_builds.to_sql(
+            name=table_known_builds,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_known_builds,
+            method='multi'
+        )
+
+        # For `robot_reports`, with remains, we just insert with `append`
+        df_new_build_reports.to_sql(
+            name=table_robot_reports,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_robot_reports,
+            method='multi'
+        )
+
+        # For `robot_reports_extended`, we insert with `append` as well
+        df_new_build_reports_details.to_sql(
+            name=table_robot_reports_extended,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_robot_reports_extended,
+            method='multi'
+        )
+

@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: jenkins-report
+  namespace: workflow-runs
+spec:
+  entrypoint: jenkins-analysis
+  volumes:
+    - name: inputs-tmpfs
+      emptyDir:
+        medium: Memory
+    - name: etl-outputs-tmpfs
+      emptyDir:
+        medium: Memory
+    - name: report-outputs-tmpfs
+      emptyDir:
+        medium: Memory
+  templates:
+    - name: jenkins-analysis
+      container:
+        image: ghcr.io/fjramons/osm-analytics:1.0.0
+        command: ["/bin/sh", "-c"]
+        args: ["Jenkins/launch_test_results.sh"]
+        envFrom:
+          - configMapRef:
+              name: jenkins-config
+          - secretRef:
+              name: ftp-credentials
+          - secretRef:
+              name: db-credentials
+          - secretRef:
+              name: jenkins-credentials
+        volumeMounts:
+          - name: inputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/inputs
+          - name: etl-outputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/etl_outputs
+          - name: report-outputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/report_outputs
+

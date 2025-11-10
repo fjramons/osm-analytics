@@ -284,7 +284,10 @@ argo logs -n workflow-runs -f @latest
 argo get -n workflow-runs @latest
 
 # Submit a workflow to generate the Jenkins report
-# TODO:
+argo submit -n workflow-runs --watch ./k8s/manifests/tests/launcher-jenkins-report.yaml
+## Check logs
+argo logs -n workflow-runs -f @latest
+argo get -n workflow-runs @latest
 
 # List the workflows
 argo list -n workflow-runs
@@ -493,7 +496,9 @@ exit
 kubectl delete job/myshell -n database
 ```
 
-## ANNEX B: Database backup and recovery
+## ANNEX B: Database backup
+
+This annex focuses on procedures for database backup. For database restoration, refer to [**Step 5.** (optional) Pre-populate the database with data of former Jenkins builds (if applicable)](#step-5-optional-pre-populate-the-database-with-data-of-former-jenkins-builds-if-applicable).
 
 ### B.1 From the old database (VM-based installation)
 
