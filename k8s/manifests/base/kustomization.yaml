@@ -6,7 +6,7 @@ resources:
 - ./mysql
 - ./db-provisioning/db-provisioning-job.yaml
 - ./workflow-templates
-# - TODO: CronWorkflows for periodic tasks
+- ./cron-workflows
 
 transformers:
 - label-transformer.yaml

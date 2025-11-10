@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: installations-report
+  namespace: workflow-runs
+spec:
+  # Run daily at 13:30 CET
+  timezone: Europe/Paris
+  schedules:
+  - "30 13 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  workflowSpec:
+    workflowTemplateRef:
+      name: installations-report
+
