@@ -213,6 +213,8 @@ watch kubectl get pod -n database
 kubectl apply -f ./k8s/manifests/tests/db-provisioning-check.yaml
 kubectl get job/db-provisioning-check -n database
 kubectl logs job/db-provisioning-check -n database
+## Same info, but in a more readable print
+printf "$(kubectl logs job/db-provisioning-check -n database)"
 kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
 
 ## To remove everything
@@ -255,7 +257,7 @@ BACKUP_FILE="../.credentials/backups/osm_metrics_db.sql.gz"
 gzip -d -c "${BACKUP_FILE}" | mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
 # gzip -d -c "${BACKUP_FILE}" | mysql -u "${DB_ROOT_USER}" -p"${DB_ROOT_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
 
-# (optional) Check that data has been properly imported
+# (optional) METHOD 1: Check that data was properly imported by accessing to the database interactively
 mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
 SHOW TABLES;
 SELECT COUNT(*) FROM builds_info;
@@ -271,6 +273,12 @@ SHOW CREATE TABLE builds_info;
 SHOW CREATE TABLE robot_reports;
 SHOW CREATE TABLE robot_reports_extended;
 exit;
+
+# (optional) METHOD 2: Use a temporary job to check that data was properly imported
+kubectl apply -f ./k8s/manifests/tests/db-provisioning-check.yaml
+kubectl get job/db-provisioning-check -n database
+printf "$(kubectl logs job/db-provisioning-check -n database)"
+kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
 
 # Kill port-forward
 pkill -f "kubectl port-forward service/osm-metrics -n database"

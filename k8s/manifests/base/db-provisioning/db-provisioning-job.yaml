@@ -19,6 +19,50 @@ spec:
             CREATE USER IF NOT EXISTS '${stdUser}'@'%' IDENTIFIED BY '${stdPassword}';
             GRANT ALL PRIVILEGES ON osm_metrics_db.* TO '${stdUser}'@'%';
             FLUSH PRIVILEGES;
+            USE osm_metrics_db;
+            DROP TABLE IF EXISTS builds_info;
+            CREATE TABLE builds_info (
+              auto_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+              job text,
+              build bigint DEFAULT NULL,
+              timestamp datetime DEFAULT NULL,
+              duration bigint DEFAULT NULL,
+              build_result text,
+              test_result text,
+              pass_count double DEFAULT NULL,
+              fail_count double DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+            DROP TABLE IF EXISTS robot_reports;
+            CREATE TABLE robot_reports (
+              auto_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+              job text,
+              build bigint DEFAULT NULL,
+              id text,
+              name text,
+              source text,
+              status text,
+              starttime datetime DEFAULT NULL,
+              endtime datetime DEFAULT NULL,
+              pass bigint DEFAULT NULL,
+              fail bigint DEFAULT NULL,
+              failed_test_id text,
+              failed_test_name text,
+              failed_keyword text
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+            DROP TABLE IF EXISTS robot_reports_extended;
+            CREATE TABLE robot_reports_extended (
+              auto_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+              job text,
+              build bigint DEFAULT NULL,
+              suite_id text,
+              suite_name text,
+              test_id text,
+              test_name text,
+              keyword_name text,
+              status text,
+              starttime datetime DEFAULT NULL,
+              endtime datetime DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
           "
         envFrom:
         - secretRef:
