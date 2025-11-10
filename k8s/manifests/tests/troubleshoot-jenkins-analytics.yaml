@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-analytics-troubleshoot
+  namespace: workflow-runs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins-analytics-troubleshoot
+  template:
+    metadata:
+      labels:
+        app: jenkins-analytics-troubleshoot
+    spec:
+      containers:
+        - name: jenkins-analytics
+          image: ghcr.io/fjramons/osm-analytics:1.0.0
+          imagePullPolicy: Always
+          command: ["sleep", "inf"]
+          # resources:
+          #   limits:
+          #     cpu: "500m"
+          #     memory: "512Mi"
+          #   requests:
+          #     cpu: "100m"
+          #     memory: "128Mi"
+          # ports:
+          #   - containerPort: 8888 # Jupyter Lab default
+          envFrom:
+            - configMapRef:
+                name: jenkins-config
+            - secretRef:
+                name: ftp-credentials
+            - secretRef:
+                name: db-credentials
+            - secretRef:
+                name: jenkins-credentials
+          volumeMounts:
+            - name: inputs-tmpfs
+              mountPath: /osm-analytics/Jenkins/inputs
+            - name: etl-outputs-tmpfs
+              mountPath: /osm-analytics/Jenkins/etl_outputs
+            - name: report-outputs-tmpfs
+              mountPath: /osm-analytics/Jenkins/report_outputs
+      volumes:
+        - name: inputs-tmpfs
+          emptyDir:
+            medium: Memory
+        - name: etl-outputs-tmpfs
+          emptyDir:
+            medium: Memory
+        - name: report-outputs-tmpfs
+          emptyDir:
+            medium: Memory

@@ -20,9 +20,14 @@
     - [A.2 Re-run database provisioning job](#a2-re-run-database-provisioning-job)
     - [A.3 **DANGEROUS:** Revert all provisioning, by removing the database and the new user](#a3-dangerous-revert-all-provisioning-by-removing-the-database-and-the-new-user)
     - [A.4 Interactive debugging](#a4-interactive-debugging)
-  - [ANNEX B: Database backup and recovery](#annex-b-database-backup-and-recovery)
+  - [ANNEX B: Database backup](#annex-b-database-backup)
     - [B.1 From the old database (VM-based installation)](#b1-from-the-old-database-vm-based-installation)
     - [B.2 From the new database (Kubernetes-based installation)](#b2-from-the-new-database-kubernetes-based-installation)
+  - [ANNEX C: Troubleshooting](#annex-c-troubleshooting)
+    - [C.1 Container troubleshooting](#c1-container-troubleshooting)
+    - [C.2 Database troubleshooting](#c2-database-troubleshooting)
+      - [C.2.1 From the `jenkins-analytics-troubleshoot` container](#c21-from-the-jenkins-analytics-troubleshoot-container)
+      - [C.2.2 From your desktop](#c22-from-your-desktop)
 
 ## 0. Introduction
 
@@ -114,6 +119,7 @@ export KUBECONFIG="$(readlink -f ${KUBECONFIG})"
 
 # (optional) Check access to the cluster
 kubectl get nodes
+kubectl get ns
 ```
 
 **NOTE:** The scripts assume that the VM/server already has a user named `ubuntu` with sudo privileges and no need of password, and SSH key-based authentication enabled.
@@ -241,6 +247,7 @@ FWD_DB_PORT=33060
 kubectl port-forward service/osm-metrics -n database ${FWD_DB_PORT}:${SOURCE_DB_PORT} &
 ## (optional) Test connection
 mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+SHOW TABLES;
 exit;
 
 # Import the dump from the backup file
@@ -257,6 +264,12 @@ SELECT COUNT(*) FROM robot_reports;
 SELECT * FROM robot_reports LIMIT 5;
 SELECT COUNT(*) FROM robot_reports_extended;
 SELECT * FROM robot_reports_extended LIMIT 5;
+DESC builds_info;
+DESC robot_reports;
+DESC robot_reports_extended;
+SHOW CREATE TABLE builds_info;
+SHOW CREATE TABLE robot_reports;
+SHOW CREATE TABLE robot_reports_extended;
 exit;
 
 # Kill port-forward
@@ -264,8 +277,6 @@ pkill -f "kubectl port-forward service/osm-metrics -n database"
 ```
 
 #### **Step 6.** (optional) Test workflow templates using sample workflow
-
-TODO:
 
 ```bash
 # Check that the WorkflowTemplates exist
@@ -357,11 +368,15 @@ DOCKER_SDK_TAG=${DOCKER_SDK_TAG:-"24h"}
 
 # Container for regular execution
 FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_SDK_TAG}
+FULL_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:latest
 echo "${FULL_IMAGE_NAME}"
+echo "${FULL_IMAGE_NAME_LATEST}"
 
 # Container for local development
 FULL_DEV_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_SDK_TAG}
+FULL_DEV_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_SDK_TAG}
 echo "${FULL_DEV_IMAGE_NAME}"
+echo "${FULL_DEV_IMAGE_NAME_LATEST}"
 ```
 
 Now we can pull or build the containers as needed.
@@ -370,11 +385,13 @@ In case we needed to build them locally:
 
 ```bash
 # Option A) Normal build
-docker build -t ${FULL_IMAGE_NAME} .
+docker build -t ${FULL_IMAGE_NAME_LATEST} .
+docker tag ${FULL_IMAGE_NAME_LATEST} ${FULL_IMAGE_NAME}
 # Option B) Build with non-pinned dependencies
 # docker build -t ${FULL_IMAGE_NAME} --build-arg ENVFILE=environment-docker.yml .
 # Option C) Build including Jupyter Lab
-docker build -t ${FULL_DEV_IMAGE_NAME} --build-arg DEVELOPMENT=true .
+docker build -t ${FULL_DEV_IMAGE_NAME_LATEST} --build-arg DEVELOPMENT=true .
+docker tag ${FULL_DEV_IMAGE_NAME_LATEST} ${FULL_DEV_IMAGE_NAME}
 ```
 
 In case we wanted to push it as a release:
@@ -382,6 +399,8 @@ In case we wanted to push it as a release:
 ```bash
 # Assuming we have GHCR_PAT and USERNAME set in the environment
 echo ${GHCR_PAT} | docker login ghcr.io -u ${USERNAME} --password-stdin
+docker push ${FULL_IMAGE_NAME_LATEST}
+## If we want to create a new release
 docker push ${FULL_IMAGE_NAME}
 ```
 
@@ -589,5 +608,168 @@ mysqldump -u ${SOURCE_DB_ROOT_USER} -p"${SOURCE_DB_ROOT_PASSWORD}" -h 127.0.0.1 
 
 # Kill port-forward
 pkill -f "kubectl port-forward service/mysql-metrics"
+```
+
+## ANNEX C: Troubleshooting
+
+Before beginning any troubleshooting session, make sure that the kubeconfig for the target cluster is properly enabled:
+
+```bash
+source ../.credentials/k8s_vms_info.rc || true
+KUBECONFIG_NAME="${VMS_K8S_NAME}-kubeconfig.yaml"
+export KUBECONFIG="../.credentials/${KUBECONFIG_NAME}"
+export KUBECONFIG="$(readlink -f ${KUBECONFIG})"
+
+# (optional) Check
+kubectl get ns
+```
+
+### C.1 Container troubleshooting
+
+For troubleshooting each of the processings, there are specific `deployment` definitions which also mount the required `ConfigMaps` and `Secrets` required for each case:
+
+```bash
+$ ls -1 k8s/manifests/tests/troubleshoot-*
+k8s/manifests/tests/troubleshoot-bugzilla-analytics.yaml
+k8s/manifests/tests/troubleshoot-installations-analytics.yaml
+k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+```
+
+For instance, if we wanted to troubleshoot the **Jenkins analytics** in the target cluster, we might proceed as follows:
+
+```bash
+kubectl apply -f k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+kubectl get all -n workflow-runs
+kubectl exec -it deploy/jenkins-analytics-troubleshoot -n workflow-runs -- bash
+# kubectl delete -f k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+```
+
+In case we needed to debug one of the Notebooks, we might proceed as follows:
+
+```bash
+# Enter the container
+kubectl exec -it deploy/jenkins-analytics-troubleshoot -n workflow-runs -- bash
+
+# ------ Inside the container ------
+
+# Install Jupyter
+conda install jupyter -y
+
+# Then launch the notebook
+# jupyter notebook \
+jupyter lab --notebook-dir=/osm-analytics --ip='*' --port=8888 --no-browser --allow-root &
+
+# Exit, so that we can access from outside
+exit
+```
+
+Now, we can access from our browser as follows:
+
+```bash
+# (optional) Check that Jupyter is active
+kubectl exec -it deploy/jenkins-analytics-troubleshoot -n workflow-runs -- jupyter server list
+
+# Create a port forward, so that it is accessible
+kubectl port-forward deploy/jenkins-analytics-troubleshoot -n workflow-runs 8888:8888 &
+
+# Get the Notebook token
+NOTEBOOK_TOKEN=$(
+  kubectl exec -it deploy/jenkins-analytics-troubleshoot -n workflow-runs -- jupyter server list --jsonlist \
+  | jq -r '.[0].token'
+)
+# Open the URL:
+echo "http://localhost:8888/?token=${NOTEBOOK_TOKEN}"
+
+# Do troubleshooting here
+# ...
+```
+
+Once finished, drop the port forward and remove the debug deployment:
+
+```bash
+pkill -f "kubectl port-forward deploy/jenkins-analytics-troubleshoot -n workflow-runs 8888:8888"
+kubectl delete -f k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+```
+
+### C.2 Database troubleshooting
+
+#### C.2.1 From the `jenkins-analytics-troubleshoot` container
+
+```bash
+# Create the container if unavailable
+kubectl apply -f k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+kubectl get all -n workflow-runs
+
+# Enter the container
+kubectl exec -it deploy/jenkins-analytics-troubleshoot -n workflow-runs -- bash
+
+# ------ Inside the container ------
+
+# Install MySQL client
+apt update
+apt install -y default-mysql-client
+
+# Connect
+# mysql -u "${stdUser}" -p"${stdPassword}" -P 3306 -h 127.0.0.1 osm_metrics_db
+mysql -u "${stdUser}" -p"${stdPassword}" -P 3306 -h osm-metrics.database.svc.cluster.local osm_metrics_db
+SHOW TABLES;
+SELECT COUNT(*) FROM builds_info;
+SELECT * FROM builds_info LIMIT 5;
+exit;
+
+# Exit the container
+exit
+```
+
+Once finished the troubleshoting, drop the port forward and remove the debug deployment:
+
+```bash
+pkill -f "kubectl port-forward deploy/jenkins-analytics-troubleshoot -n workflow-runs 8888:8888"
+kubectl delete -f k8s/manifests/tests/troubleshoot-jenkins-analytics.yaml
+```
+
+#### C.2.2 From your desktop
+
+```bash
+# Retrieve user's credentials
+export DB_STD_USER=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.stdUser}" \
+  | base64 --decode
+)
+export DB_STD_PASSWORD=$(
+  kubectl get secret/osm-metrics \
+    -n database \
+    -o jsonpath="{.data.stdPassword}" \
+  | base64 --decode
+)
+echo ${DB_STD_USER}
+echo ${DB_STD_PASSWORD}
+
+# Create a port-forward to access the database from the client machine
+## (optional) Inspect the service
+kubectl get service/osm-metrics -n database
+## Run the port-forward in background
+SOURCE_DB_PORT=3306
+FWD_DB_PORT=33060
+kubectl port-forward service/osm-metrics -n database ${FWD_DB_PORT}:${SOURCE_DB_PORT} &
+
+# Connect to the database
+mysql -u "${DB_STD_USER}" -p"${DB_STD_PASSWORD}" -P ${FWD_DB_PORT} -h 127.0.0.1 osm_metrics_db
+SHOW TABLES;
+SELECT COUNT(*) FROM builds_info;
+SELECT * FROM builds_info LIMIT 5;
+SELECT COUNT(*) FROM robot_reports;
+SELECT * FROM robot_reports LIMIT 5;
+SELECT COUNT(*) FROM robot_reports_extended;
+SELECT * FROM robot_reports_extended LIMIT 5;
+exit;
+```
+
+Once finished the troubleshooting, finish the port-forward:
+
+```bash
+pkill -f "kubectl port-forward service/osm-metrics -n database"
 ```
 

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: installations-analytics-troubleshoot
+  namespace: workflow-runs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: installations-analytics-troubleshoot
+  template:
+    metadata:
+      labels:
+        app: installations-analytics-troubleshoot
+    spec:
+      containers:
+        - name: installations-analytics
+          image: ghcr.io/fjramons/osm-analytics:1.0.0
+          imagePullPolicy: Always
+          command: ["sleep", "inf"]
+          # ports:
+          #   - containerPort: 8888
+          envFrom:
+            - configMapRef:
+                name: installations-config
+            - secretRef:
+                name: ftp-credentials
+          volumeMounts:
+            - name: outputs-tmpfs
+              mountPath: /osm-analytics/Installations/outputs
+            - name: inputs-tmpfs
+              mountPath: /osm-analytics/Installations/inputs
+      volumes:
+        - name: outputs-tmpfs
+          emptyDir:
+            medium: Memory
+        - name: inputs-tmpfs
+          emptyDir:
+            medium: Memory
