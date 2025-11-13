@@ -4,6 +4,17 @@ kind: Kustomization
 resources:
 - ../base
 
+# -------------------- Set processing image tag -------------------
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: WorkflowTemplate
+    patch: |-
+      - op: replace
+        path: /spec/templates/0/container/image
+        value: ghcr.io/fjramons/osm-analytics:1.0.0
+
 # ---------------------- Generated resources ----------------------
 
 secretGenerator:
@@ -12,9 +23,7 @@ secretGenerator:
   namespace: database
   literals:
   - rootHost=%
-  env: ../../../../.credentials/db-credentials.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/db-credentials.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -24,9 +33,7 @@ secretGenerator:
   namespace: workflow-runs
   literals:
   - rootHost=%
-  env: ../../../../.credentials/db-credentials.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/db-credentials.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -34,9 +41,7 @@ secretGenerator:
 # FTP credentials - `workflow-runs` namespace
 - name: ftp-credentials
   namespace: workflow-runs
-  env: ../../../../.credentials/ftp-credentials.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/ftp-credentials.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -44,9 +49,7 @@ secretGenerator:
 # Jenkins credentials - `workflow-runs` namespace
 - name: jenkins-credentials
   namespace: workflow-runs
-  env: ../../../../.credentials/jenkins-credentials.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/jenkins-credentials.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -56,9 +59,7 @@ configMapGenerator:
 # Jenkins configuration - `workflow-runs` namespace
 - name: jenkins-config
   namespace: workflow-runs
-  env: ../../../../.credentials/jenkins-config.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/jenkins-config.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -66,9 +67,7 @@ configMapGenerator:
 # Installations configuration - `workflow-runs` namespace
 - name: installations-config
   namespace: workflow-runs
-  env: ../../../../.credentials/installations-config.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/installations-config.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true
@@ -76,9 +75,7 @@ configMapGenerator:
 # Bugzilla configuration - `workflow-runs` namespace
 - name: bugzilla-config
   namespace: workflow-runs
-  env: ../../../../.credentials/bugzilla-config.env
-  # Reference above requires using:
-  # kustomize build --load-restrictor LoadRestrictionsNone
+  env: config/bugzilla-config.env
   options:
     # This prevents that the secret name gets a hash suffix but not the reference from the CRD
     disableNameSuffixHash: true

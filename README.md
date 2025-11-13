@@ -66,38 +66,42 @@ In our client environment (i.e., not in the cluster VM/server), we are expected 
    ```text
    ..
    ├── .credentials
-   ├── configurations
    └── osm-analytics   # <- this repo
+       └── k8s
+           ├── clusters
+           └── manifests
+               ├── env-templates
+               ├── tests
+               │  . . .
+               ├── crds
+               ├── base
+               ├── overlay-dev
+               │   └── config (untracked)
+               └── overlay-prod
+                   └── config (untracked)
    ```
 
    Where:
 
+- `.credentials` contains sensitive data such as new `kubeconfig`s for target clusters, database backups, etc.
 - `osm-analytics` is the local clone of this repo.
-- `.credentials` contains sensitive data related to the environment, such as: `kubeconfig` of the target cluster, Jenkins credentials, database credentials, or FTP credentials.
-- `configurations` contains configuration files for the different analysis workflows.
+- `k8s/clusters/` contains automation scripts to create a simple K3s cluster.
+- `k8s/manifests/crds/` contains the required CRDs for OSM Analytics.
+- `k8s/manifests/base/` contains the base Kustomization for the OSM Analytics installation.
+- `k8s/manifests/<TARGET-ENV>-overlay/` contains the overlay Kustomization for a specific target deployment environment. With the base clone, `<TARGET-ENV>` may be `dev` or `prod`.
+- `k8s/manifests/<TARGET-ENV>-overlay/config/` contains configuration files for the different analysis workflows in the `<TARGET-ENV>` environment.
+- `k8s/manifests/env-templates/` contains templates for generating configuration files for a given target deployment environment.
+- `k8s/manifests/tests/` contains additional K8s manifests to perform various troubleshooting tasks.
 
 #### **Step 2.** Setup of a Kubernetes cluster
 
-Create a Kubernetes cluster using your preferred method, and copy the `kubeconfig` file for accessing the target cluster to the `.credentials` folder:
-
-```bash
-KUBECONFIG_NAME="your-cluster-kubeconfig.yaml"
-cp "${KUBECONFIG_NAME}" "../.credentials/${KUBECONFIG_NAME}"
-
-# Then we should set the kubeconfig as the current default
-export KUBECONFIG="../.credentials/${KUBECONFIG_NAME}"
-export KUBECONFIG="$(readlink -f ${KUBECONFIG})"
-
-# (optional) Check access to the cluster
-kubectl get nodes
-```
+Create a Kubernetes cluster using your preferred method.
 
 In case you are given a VM or server, you might want to use a lightweight Kubernetes distribution, such as [K3s](https://k3s.io/). The current repo contains a set of scripts to create easily a K3s cluster over a single VM/server, following this procedure:
 
 ```bash
 # Update accordingly
 ## In case it exists
-source ../.credentials/k8s_vms_info.rc || true
 export VMS_K8S_IP=${VMS_K8S_IP:-"your.vm.ip.address.or.fqdn.here"}
 export VMS_K8S_NAME=${VMS_K8S_NAME:-"osm-analytics"}
 
@@ -110,11 +114,34 @@ pushd k8s/clusters >/dev/null
 popd >/dev/null
 ```
 
-This procedure will also export the new cluster's kubeconfig to the expected location: `../.credentials/${VMS_K8S_NAME}-kubeconfig.yaml`. We would just need to set the kubeconfig as the current default:
+This procedure will also export the new cluster's kubeconfig to the `../.credentials` folder.
+
+**NOTE:** The scripts assume that the VM/server already has a user named `ubuntu` with sudo privileges and no need of password, and SSH key-based authentication enabled.
+
+**Once you have created your cluster** (either with these scripts or with any other procedure), you will need to copy the `kubeconfig` file to the `config` folder for the corresponding target environment:
 
 ```bash
+# Select the target environment for your deployment
+TARGET_ENVIRONMENT=overlay-prod
+# TARGET_ENVIRONMENT=overlay-dev
+ENVIRONMENT_CONFIG="k8s/manifests/${TARGET_ENVIRONMENT}/config"
+#-------------------------------------------------------------------
+
+# Determine the kubeconfig filename
+#
+## CASE A) If you created the cluster using the script:
+source ../.credentials/k8s_vms_info.rc
 KUBECONFIG_NAME="${VMS_K8S_NAME}-kubeconfig.yaml"
-export KUBECONFIG="../.credentials/${KUBECONFIG_NAME}"
+#
+## CASE B) Otherwise:
+# KUBECONFIG_NAME="yourcluster-kubeconfig.yaml"
+
+# Copy to the environment config
+cp "../.credentials/k8s_vms_info.rc" "${ENVIRONMENT_CONFIG}/" || true
+cp "../.credentials/${KUBECONFIG_NAME}" "${ENVIRONMENT_CONFIG}/"
+
+# Then we set the kubeconfig as the current default
+export KUBECONFIG="${ENVIRONMENT_CONFIG}/${KUBECONFIG_NAME}"
 export KUBECONFIG="$(readlink -f ${KUBECONFIG})"
 
 # (optional) Check access to the cluster
@@ -122,17 +149,16 @@ kubectl get nodes
 kubectl get ns
 ```
 
-**NOTE:** The scripts assume that the VM/server already has a user named `ubuntu` with sudo privileges and no need of password, and SSH key-based authentication enabled.
-
 #### **Step 3.** Fill-in files with key configuration parameters
 
-First, copy all templates for environment variables to be filled-in to the `.credentials` folder:
+First, copy all templates for environment variables to be filled-in to the `config` folder at the corresponding overlay for the target deployment environment:
 
 ```bash
-cp -i k8s/manifests/env-templates/* ../.credentials/
+# cp -i k8s/manifests/env-templates/* k8s/manifests/${TARGET_ENVIRONMENT}/config/
+cp -i k8s/manifests/env-templates/* "${ENVIRONMENT_CONFIG}/"
 ```
 
-Then, fill-in all the required parameters in each of the following files:
+Then, fill-in all the required parameters for each of the following files:
 
 - **`db-credentials.env`**: (**sensitive file**) Credentials for accessing the database where historical builds and analysis are accumulated. Required keys are:
   - `rootUser`: Username of the InnoDBCluster root user.
@@ -199,8 +225,18 @@ These Kustomizations will deploy:
 # First, install all CRDs
 kubectl apply -k ./k8s/manifests/crds/
 
-# Then, install all resources
-kubectl kustomize --load-restrictor LoadRestrictionsNone ./k8s/manifests/overlay | kubectl apply -f -
+# Check/Select the target environment for your deployment
+echo "${TARGET_ENVIRONMENT}"
+# TARGET_ENVIRONMENT=overlay-dev
+# # TARGET_ENVIRONMENT=overlay-prod
+# ENVIRONMENT_CONFIG="k8s/manifests/${TARGET_ENVIRONMENT}/config"
+#-------------------------------------------------------------------
+
+# (optional) Dry-run for all resources that will be deployed to the target environment
+kubectl kustomize "./k8s/manifests/${TARGET_ENVIRONMENT}" | bat -l yaml
+
+# Finally, install all resources for the target environment
+kubectl kustomize "./k8s/manifests/${TARGET_ENVIRONMENT}" | kubectl apply -f -
 ```
 
 (optional) Check that the resources are properly created and the database provisioned:
@@ -218,7 +254,8 @@ printf "$(kubectl logs job/db-provisioning-check -n database)"
 kubectl delete -f ./k8s/manifests/tests/db-provisioning-check.yaml
 
 ## To remove everything
-# kubectl kustomize --load-restrictor LoadRestrictionsNone ./k8s/manifests/overlay | kubectl delete -f -
+# kubectl kustomize "./k8s/manifests/${TARGET_ENVIRONMENT}" | kubectl delete -f -
+# kubectl delete -k ./k8s/manifests/crds/
 ```
 
 #### **Step 5.** (optional) Pre-populate the database with data of former Jenkins builds (if applicable)
@@ -623,9 +660,9 @@ pkill -f "kubectl port-forward service/mysql-metrics"
 Before beginning any troubleshooting session, make sure that the kubeconfig for the target cluster is properly enabled:
 
 ```bash
-source ../.credentials/k8s_vms_info.rc || true
+source k8s/manifests/${TARGET_ENVIRONMENT}/config/k8s_vms_info.rc || true
 KUBECONFIG_NAME="${VMS_K8S_NAME}-kubeconfig.yaml"
-export KUBECONFIG="../.credentials/${KUBECONFIG_NAME}"
+export KUBECONFIG="k8s/manifests/${TARGET_ENVIRONMENT}/config/${KUBECONFIG_NAME}"
 export KUBECONFIG="$(readlink -f ${KUBECONFIG})"
 
 # (optional) Check
