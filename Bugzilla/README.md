@@ -22,12 +22,50 @@ UNIX/OSX/Linux:
 
 ```bash
 ./launch_bugzilla_analysis.sh
+# UPLOAD_REPORT=YES ./launch_bugzilla_analysis.sh
 ```
 
 Windows:
 
 ```powershell
 launch_bugzilla_analysis.cmd
+```
+
+### From Docker container
+
+First, load the required variables:
+
+```bash
+# Variables to upload to the FTP server (as needed)
+FTP_SERVER="ftp://osm-download.etsi.org"
+## Sourcing this file is expected to load the contents of `FTP_USERNAME` and `FTP_PASSWORD` (otherwise, just define them)
+source ../.env
+```
+
+Then, for an unattended execution, run the command setting the `UPLOAD_REPORT` variable so that the report is uploaded to the FTP after created:
+
+```bash
+# Run the container mounting local folders and setting environment variables
+docker run --rm -it \
+  -v "${PWD}/outputs":/osm-analytics/Bugzilla/outputs \
+  --tmpfs /osm-analytics/Bugzilla/inputs \
+  -e UPLOAD_REPORT=YES \
+  -e FTP_SERVER=${FTP_SERVER} \
+  -e FTP_USERNAME=${FTP_USERNAME} \
+  -e FTP_PASSWORD=${FTP_PASSWORD} \
+  ${FULL_IMAGE_NAME} \
+  Bugzilla/launch_bugzilla_analysis.sh
+
+# # Alternatively, you may prefer using temporary folders, particularly if you plan to upload only fresh contents to the FTP
+# docker run --rm -it \
+#   --tmpfs /osm-analytics/Bugzilla/outputs \
+#   --tmpfs /osm-analytics/Bugzilla/inputs \
+#   -e UPLOAD_REPORT=YES \
+#   -e FTP_SERVER=${FTP_SERVER} \
+#   -e FTP_USERNAME=${FTP_USERNAME} \
+#   -e FTP_PASSWORD=${FTP_PASSWORD} \
+#   ${FULL_IMAGE_NAME} \
+#   Bugzilla/launch_bugzilla_analysis.sh
 ```
 
 ## Environment variables

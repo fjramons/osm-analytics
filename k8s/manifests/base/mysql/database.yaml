@@ -1,0 +1,18 @@
+apiVersion: mysql.oracle.com/v2
+kind: InnoDBCluster
+metadata:
+  name: osm-metrics
+  namespace: database
+spec:
+  secretName: osm-metrics
+  tlsUseSelfSigned: true
+  instances: 1
+  router:
+    instances: 1
+  # Extend storage capacity over default's 2Gi to 5Gi
+  datadirVolumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 5Gi
+

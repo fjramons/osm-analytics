@@ -1,0 +1,82 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../base
+
+# -------------------- Set processing image tag -------------------
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: WorkflowTemplate
+    patch: |-
+      - op: replace
+        path: /spec/templates/0/container/image
+        value: ghcr.io/fjramons/osm-analytics:1.0.0
+
+# ---------------------- Generated resources ----------------------
+
+secretGenerator:
+# Database credentials - `database` namespace
+- name: osm-metrics
+  namespace: database
+  literals:
+  - rootHost=%
+  env: config/db-credentials.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Database credentials - `workflow-runs` namespace
+- name: db-credentials
+  namespace: workflow-runs
+  literals:
+  - rootHost=%
+  env: config/db-credentials.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# FTP credentials - `workflow-runs` namespace
+- name: ftp-credentials
+  namespace: workflow-runs
+  env: config/ftp-credentials.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Jenkins credentials - `workflow-runs` namespace
+- name: jenkins-credentials
+  namespace: workflow-runs
+  env: config/jenkins-credentials.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+
+configMapGenerator:
+# Jenkins configuration - `workflow-runs` namespace
+- name: jenkins-config
+  namespace: workflow-runs
+  env: config/jenkins-config.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Installations configuration - `workflow-runs` namespace
+- name: installations-config
+  namespace: workflow-runs
+  env: config/installations-config.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+
+# Bugzilla configuration - `workflow-runs` namespace
+- name: bugzilla-config
+  namespace: workflow-runs
+  env: config/bugzilla-config.env
+  options:
+    # This prevents that the secret name gets a hash suffix but not the reference from the CRD
+    disableNameSuffixHash: true
+

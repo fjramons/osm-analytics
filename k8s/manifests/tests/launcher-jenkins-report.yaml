@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: jenkins-report-
+  namespace: workflow-runs
+spec:
+  workflowTemplateRef:
+    name: jenkins-report
+  ttlStrategy:
+    secondsAfterCompletion: 3600
+

@@ -1,5 +1,17 @@
 # README  - Installations analysis
 
+- [README  - Installations analysis](#readme----installations-analysis)
+  - [Usage](#usage)
+    - [From Docker container](#from-docker-container)
+      - [Option A) Interactive execution (testing only)](#option-a-interactive-execution-testing-only)
+      - [Option B) Unattended execution](#option-b-unattended-execution)
+  - [Environment variables](#environment-variables)
+  - [ANNEX: Main generated dataframes](#annex-main-generated-dataframes)
+    - [Basic dataframes](#basic-dataframes)
+    - [Time series of installation attempts per release](#time-series-of-installation-attempts-per-release)
+    - [Analysis of progress during installation](#analysis-of-progress-during-installation)
+    - [Analysis of failed installation attempts](#analysis-of-failed-installation-attempts)
+
 ## Usage
 
 Open and run the `installation_analysis.ipynb` notebook. The results will be published in the `outputs` folder:
@@ -12,21 +24,109 @@ It can also be executed from the command line as:
 jupyter nbconvert --to html --output outputs/installation_analysis.html --TemplateExporter.exclude_input=True --execute installation_analysis.ipynb
 ```
 
-### Unattended execution
-
-TBC.
-
-<!-- UNIX/OSX/Linux:
+or
 
 ```bash
+# For UNIX/OSX/Linux:
 ./launch_installation_analysis.sh
+# UPLOAD_REPORT=YES ./launch_installation_analysis.sh
 ```
 
-Windows:
-
 ```powershell
+# For windows:
 launch_installation_analysis.cmd
-``` -->
+```
+
+### From Docker container
+
+#### Option A) Interactive execution (testing only)
+
+First, load the required variables:
+
+```bash
+# Variables to upload to the FTP server (as needed)
+FTP_SERVER="ftp://osm-download.etsi.org"
+## Sourcing this file is expected to load the contents of `FTP_USERNAME` and `FTP_PASSWORD` (otherwise, just define them)
+source ../.env
+```
+
+Then, launch the container:
+
+```bash
+# Run the container mounting local folders and setting environment variables
+docker run --rm -it \
+  -v "${PWD}/outputs":/osm-analytics/Installations/outputs \
+  --tmpfs /osm-analytics/Installations/inputs \
+  -e FTP_SERVER=${FTP_SERVER} \
+  -e FTP_USERNAME=${FTP_USERNAME} \
+  -e FTP_PASSWORD=${FTP_PASSWORD} \
+  ${FULL_IMAGE_NAME} \
+  bash
+
+# # Alternatively, you may prefer using temporary folders, particularly if you plan to upload only fresh contents to the FTP
+# docker run --rm -it \
+#   --tmpfs /osm-analytics/Installations/outputs \
+#   --tmpfs /osm-analytics/Installations/inputs \
+#   -e FTP_SERVER=${FTP_SERVER} \
+#   -e FTP_USERNAME=${FTP_USERNAME} \
+#   -e FTP_PASSWORD=${FTP_PASSWORD} \
+#   ${FULL_IMAGE_NAME} \
+#   bash
+```
+
+From within the container, we will run the required commands:
+
+```bash
+# Generate report without uploading
+Installations/launch_installation_analysis.sh
+## Alternative method:
+# cd Installations
+# jupyter nbconvert --to html --output outputs/installation_analysis.html --TemplateExporter.exclude_input=True --execute installation_analysis.ipynb
+
+# Generate report AND upload to the FTP server
+UPLOAD_REPORT=YES Installations/launch_installation_analysis.sh
+
+
+# Exit from the container
+exit
+```
+
+#### Option B) Unattended execution
+
+First, load the required variables:
+
+```bash
+# Variables to upload to the FTP server (as needed)
+FTP_SERVER="ftp://osm-download.etsi.org"
+## Sourcing this file is expected to load the contents of `FTP_USERNAME` and `FTP_PASSWORD` (otherwise, just define them)
+source ../.env
+```
+
+Then run the command unattended, setting the `UPLOAD_REPORT` variable so that the report is uploaded to the FTP after created:
+
+```bash
+# Run the container mounting local folders and setting environment variables
+docker run --rm -it \
+  -v "${PWD}/outputs":/osm-analytics/Installations/outputs \
+  --tmpfs /osm-analytics/Installations/inputs \
+  -e UPLOAD_REPORT=YES \
+  -e FTP_SERVER=${FTP_SERVER} \
+  -e FTP_USERNAME=${FTP_USERNAME} \
+  -e FTP_PASSWORD=${FTP_PASSWORD} \
+  ${FULL_IMAGE_NAME} \
+  Installations/launch_installation_analysis.sh
+
+# # Alternatively, you may prefer using temporary folders, particularly if you plan to upload only fresh contents to the FTP
+# docker run --rm -it \
+#   --tmpfs /osm-analytics/Installations/outputs \
+#   --tmpfs /osm-analytics/Installations/inputs \
+#   -e UPLOAD_REPORT=YES \
+#   -e FTP_SERVER=${FTP_SERVER} \
+#   -e FTP_USERNAME=${FTP_USERNAME} \
+#   -e FTP_PASSWORD=${FTP_PASSWORD} \
+#   ${FULL_IMAGE_NAME} \
+#   Installations/launch_installation_analysis.sh
+```
 
 ## Environment variables
 
@@ -35,12 +135,12 @@ TBC.
 <!-- Default behaviours can be changed by setting specific environment variables:
 
 - `INPUTS_FOLDER`: Folder where input data is located.
-  - If not set, it will be the `etl_outputs` subfolder.
+  - If not set, it will be the `inputs` subfolder.
 - `OUTPUTS_FOLDER`: Folder to save results.
-  - If not set, it will use the `report_outputs` subfolder.
+  - If not set, it will use the `outputs` subfolder.
 - `SKIP_EXPORT_TO_HTML`: If set, the Notebook is not exported to HTML. -->
 
-## Main generated dataframes
+## ANNEX: Main generated dataframes
 
 ### Basic dataframes
 
@@ -226,3 +326,4 @@ TBC.
 - `installation_type`.
 - `osm_unhealthy`: Type of unhealthy state reported.
 - `count`.
+

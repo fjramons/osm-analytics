@@ -3,16 +3,17 @@ channels:
   - defaults
   - conda-forge
 dependencies:
+  - python=3.8.5
+  - python-dotenv
+  - ipykernel
+  - nbconvert
+  - nbformat
+  - openpyxl
+  - pandas
+  - plotly_express
+  - pymysql
+  - python-jenkins
   - seaborn
   - sqlalchemy
-  - xlsxwriter
-  - pandas
-  - ipykernel
-  - python=3.8.5
-  - python-jenkins
   - xlrd
-  - openpyxl
-  - nbformat
-  - nbconvert
-  - pymysql
-  - plotly_express
+  - xlsxwriter

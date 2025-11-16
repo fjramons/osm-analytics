@@ -6,13 +6,20 @@ import jenkins
 from jenkins_lib import *
 from robot_lib import *
 from sqlalchemy import create_engine
+from sqlalchemy import text
+from sqlalchemy.types import BigInteger, String, Float, DateTime, Integer
+import warnings
 
-def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
-                                  robot_report = 'tmp_robot_report.xml',
-                                  table_known_builds = 'builds_info',
-                                  table_robot_reports = 'robot_reports',
-                                  table_robot_reports_extended = 'robot_reports_extended'):
 
+def ingest_update_all_jenkins_job(
+        jenkins_server,
+        job_name,
+        database_engine,
+        robot_report = 'tmp_robot_report.xml',
+        table_known_builds = 'builds_info',
+        table_robot_reports = 'robot_reports',
+        table_robot_reports_extended = 'robot_reports_extended'
+    ):
 
     # If there is historical data about former builds of this job, it is retrieved first (otherwise, it should return an empty dataframe):
     try:
@@ -34,7 +41,13 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
     df_unknown_builds['build'] = new_builds
     df_unknown_builds['job'] = job_name
     df_unknown_builds['timestamp'] = pd.to_datetime(df_unknown_builds.timestamp)
-    df_known_builds = pd.concat([df_known_builds, df_unknown_builds], ignore_index=True)
+    # df_known_builds = pd.concat([df_known_builds, df_unknown_builds], ignore_index=True)
+    df_known_builds = pd.concat(
+        [
+            df.dropna(axis=1, how='all') for df in [df_known_builds, df_unknown_builds]
+        ],
+        ignore_index=True
+    )
 
     # Starts with empty dataframes
     df_new_build_reports = pd.DataFrame(columns=['job', 'build', 'id', 'name', 'source', 'status', 'starttime', 'endtime', 'pass', 'fail', 'failed_test_id', 'failed_test_name', 'failed_keyword'])
@@ -70,12 +83,64 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
             # Retrieves the rows that need to be added the corresponding database table, and appends them
             df_build_report = get_consolidated_results_from_report(robot_report, with_rca=True)
             df_build_report_details = get_detailed_results_from_report(robot_report)
-            df_new_build_reports = pd.concat([df_new_build_reports, df_build_report], ignore_index=True)
-            df_new_build_reports_details = pd.concat([df_new_build_reports_details, df_build_report_details], ignore_index=True)
+            # df_new_build_reports = pd.concat([df_new_build_reports, df_build_report], ignore_index=True)
+            #
+            ## Comment if this behaviour is undesired. Then, see code into the `with` clause that follows
+            df_new_build_reports = pd.concat(
+                [
+                    df.dropna(axis=1, how='all') for df in [df_new_build_reports, df_build_report]
+                ],
+                ignore_index=True
+            )
+            #####################################################################33
+
+            # df_new_build_reports_details = pd.concat([df_new_build_reports_details, df_build_report_details], ignore_index=True)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    category=FutureWarning,
+                    message="The behavior of DataFrame concatenation with empty or all-NA entries is deprecated*"
+                )
+
+                # Use only if this behaviour is desired also for the previous dataframe:
+                # ---------------------------------------------------------------------
+                # df_new_build_reports = pd.concat(
+                #     [df_new_build_reports, df_build_report],
+                #     ignore_index=True
+                # )
+
+                df_new_build_reports_details = pd.concat(
+                    [df_new_build_reports_details, df_build_report_details],
+                    ignore_index=True
+                )
 
             # Adds the build number to the new rows
-            df_new_build_reports.build.fillna(build_number, inplace=True)
-            df_new_build_reports_details.build.fillna(build_number, inplace=True)
+            ## df_new_build_reports.build.fillna(build_number, inplace=True)
+            # df_new_build_reports.loc[:, 'build'] = df_new_build_reports.loc[:, 'build'].fillna(build_number)
+            ## Ensures the column exists, even empty
+            if 'build' not in df_new_build_reports.columns:
+                # df_new_build_reports['build'] = pd.NA
+                df_new_build_reports['build'] = np.nan
+            ## Fills values accordingly
+            df_new_build_reports.loc[:, 'build'] = (
+                df_new_build_reports.loc[:, 'build']
+                .astype('object')
+                .infer_objects(copy=False)
+                .fillna(build_number)
+            )
+
+            ## df_new_build_reports_details.build.fillna(build_number, inplace=True)
+            # df_new_build_reports_details.loc[:, 'build'] = df_new_build_reports_details.loc[:, 'build'].fillna(build_number)
+            ## Ensures the column exists, even empty
+            if 'build' not in df_new_build_reports_details.columns:
+                df_new_build_reports_details['build'] = pd.NA
+            ## Fills values accordingly
+            df_new_build_reports_details.loc[:, 'build'] = (
+                df_new_build_reports_details.loc[:, 'build']
+                .astype('object')
+                .infer_objects(copy=False)
+                .fillna(build_number)
+            )
 
             # Records the number of tests passed vs. failed
             df_known_builds.loc[this_build_and_job, 'pass_count'] = df_build_report['pass'].sum()
@@ -96,8 +161,32 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
             print('Report unavailable')
 
     # All new rows should come from the same job
-    df_new_build_reports.job.fillna(job_name, inplace=True)
-    df_new_build_reports_details.job.fillna(job_name, inplace=True)
+
+    ## df_new_build_reports.job.fillna(job_name, inplace=True)
+    # df_new_build_reports.loc[:, 'job'] = df_new_build_reports.loc[:, 'job'].fillna(job_name)
+    ## Ensures the column exists, even empty
+    if 'job' not in df_new_build_reports.columns:
+        df_new_build_reports['job'] = pd.NA
+    ## Fills values accordingly
+    df_new_build_reports.loc[:, 'job'] = (
+        df_new_build_reports.loc[:, 'job']
+        .astype('object')
+        .infer_objects(copy=False)
+        .fillna(job_name)
+    )
+
+    ## df_new_build_reports_details.job.fillna(job_name, inplace=True)
+    # df_new_build_reports_details.loc[:, 'job'] = df_new_build_reports_details.loc[:, 'job'].fillna(job_name)
+    ## Ensures the column exists, even empty
+    if 'job' not in df_new_build_reports_details.columns:
+        df_new_build_reports_details['job'] = pd.NA
+    ## Fills values accordingly
+    df_new_build_reports_details.loc[:, 'job'] = (
+        df_new_build_reports_details.loc[:, 'job']
+        .astype('object')
+        .infer_objects(copy=False)
+        .fillna(job_name)
+    )
 
     # Fixes the data types
     df_new_build_reports['build'] = df_new_build_reports.build.astype('int')
@@ -110,8 +199,118 @@ def ingest_update_all_jenkins_job(jenkins_server, job_name, database_engine,
     df_known_builds['pass_count'] = df_known_builds.pass_count.astype('float')
     df_known_builds['fail_count'] = df_known_builds.fail_count.astype('float')
 
-    # Saves the results to the database as a single transaction:
+
+    # --------------------------------------------------------------
+    # Saves the results to the database as a single transaction
+    # --------------------------------------------------------------
+
+    ## OLD CODE:
+    # with database_engine.begin() as conn:
+    #     df_known_builds.to_sql(name=table_known_builds, con=conn, if_exists='replace', index=False)
+    #     df_new_build_reports.to_sql(name=table_robot_reports, con=conn, if_exists='append', index=False)
+    #     df_new_build_reports_details.to_sql(name=table_robot_reports_extended, con=conn, if_exists='append', index=False)
+    ##
+
+    # Converts columns `category` to `str` for each DataFrame
+    ## df_known_builds
+    df_known_builds["build_result"] = df_known_builds["build_result"].astype(str)
+    df_known_builds["test_result"] = df_known_builds["test_result"].astype(str)
+    ## df_new_build_reports
+    df_new_build_reports["status"] = df_new_build_reports["status"].astype(str)
+    ## df_new_build_reports_details
+    df_new_build_reports_details["status"] = df_new_build_reports_details["status"].astype(str)
+
+    # If existing, remove `auto_id` column so that MySQL can generate it automatically
+    if 'auto_id' in df_known_builds.columns:
+        df_known_builds = df_known_builds.drop(columns=['auto_id'])
+
+    # Dtypes for `builds_info`
+    dtype_known_builds = {
+        "job": String(65535),  # TEXT in MySQL allows up to 65535 bytes
+        "build": BigInteger(),
+        "timestamp": DateTime(),
+        "duration": BigInteger(),
+        "build_result": String(65535),
+        "test_result": String(65535),
+        "pass_count": Float(),
+        "fail_count": Float()
+    }
+
+    # Dtypes for `robot_reports`
+    dtype_robot_reports = {
+        "job": String(65535),
+        "build": BigInteger(),
+        "id": String(65535),
+        "name": String(65535),
+        "source": String(65535),
+        "status": String(65535),
+        "starttime": DateTime(),
+        "endtime": DateTime(),
+        "pass": Integer(),
+        "fail": Integer(),
+        "failed_test_id": String(65535),
+        "failed_test_name": String(65535),
+        "failed_keyword": String(65535),
+    }
+
+    # Dtypes for `robot_reports_extended`
+    dtype_robot_reports_extended = {
+        "job": String(65535),
+        "build": String(255),  # Según tu info es object en df_new_build_reports_details, usar varchar(255)
+        "suite_id": String(65535),
+        "suite_name": String(65535),
+        "test_id": String(65535),
+        "test_name": String(65535),
+        "keyword_name": String(65535),
+        "status": String(65535),
+        "starttime": DateTime(),
+        "endtime": DateTime(),
+    }
+
     with database_engine.begin() as conn:
-        df_known_builds.to_sql(name=table_known_builds, con=conn, if_exists='replace', index=False)
-        df_new_build_reports.to_sql(name=table_robot_reports, con=conn, if_exists='append', index=False)
-        df_new_build_reports_details.to_sql(name=table_robot_reports_extended, con=conn, if_exists='append', index=False)
+        # Delete and re-create `builds_info` table with the origina schema and `auto_increment`
+        conn.execute(text(f"DROP TABLE IF EXISTS {table_known_builds}"))
+        conn.execute(text(f"""
+            CREATE TABLE {table_known_builds} (
+                auto_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                job TEXT,
+                build BIGINT,
+                timestamp DATETIME,
+                duration BIGINT,
+                build_result TEXT,
+                test_result TEXT,
+                pass_count DOUBLE,
+                fail_count DOUBLE
+            ) ENGINE=InnoDB;
+        """))
+
+        # Insert data without `auto_id` columns so that MySQL assigns it
+        df_known_builds.to_sql(
+            name=table_known_builds,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_known_builds,
+            method='multi'
+        )
+
+        # For `robot_reports`, with remains, we just insert with `append`
+        df_new_build_reports.to_sql(
+            name=table_robot_reports,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_robot_reports,
+            method='multi'
+        )
+
+        # For `robot_reports_extended`, we insert with `append` as well
+        df_new_build_reports_details.to_sql(
+            name=table_robot_reports_extended,
+            con=conn,
+            if_exists='append',
+            index=False,
+            dtype=dtype_robot_reports_extended,
+            method='multi'
+        )
+
