@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: jenkins-long-period-report-
+  namespace: workflow-runs
+spec:
+  workflowTemplateRef:
+    name: jenkins-long-period-report
+  ttlStrategy:
+    secondsAfterCompletion: 3600
+  arguments:
+    parameters:
+      - name: days_since_today_4_analysis
+        value: "180"
+

@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: jenkins-long-period-report
+  namespace: workflow-runs
+spec:
+  arguments:
+    parameters:
+      - name: days_since_today_4_analysis
+        value: "180"  # Default value: 6 months = 180 days
+  entrypoint: jenkins-analysis
+  volumes:
+    - name: inputs-tmpfs
+      emptyDir:
+        medium: Memory
+    - name: etl-outputs-tmpfs
+      emptyDir:
+        medium: Memory
+    - name: report-outputs-tmpfs
+      emptyDir:
+        medium: Memory
+  templates:
+    - name: jenkins-analysis
+      inputs:
+        parameters:
+          - name: days_since_today_4_analysis
+      container:
+        image: ghcr.io/fjramons/osm-analytics:1.0.0
+        command: ["/bin/sh", "-c"]
+        args: ["Jenkins/launch_test_results.sh"]
+        envFrom:
+          - configMapRef:
+              name: jenkins-config
+          - secretRef:
+              name: ftp-credentials
+          - secretRef:
+              name: db-credentials
+          - secretRef:
+              name: jenkins-credentials
+        env:
+        - name: DAYS_SINCE_TODAY_4_ANALYSIS
+          value: "{{inputs.parameters.days_since_today_4_analysis}}"
+        volumeMounts:
+          - name: inputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/inputs
+          - name: etl-outputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/etl_outputs
+          - name: report-outputs-tmpfs
+            mountPath: /osm-analytics/Jenkins/report_outputs
+
