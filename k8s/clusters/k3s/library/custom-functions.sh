@@ -25,11 +25,12 @@ monitor_condition() {
 # Check the VM is reachable by SSH
 function vms_ssh_ready() {
     VMS_K8S_IP=${1:-"${VMS_K8S_IP}"}
+    REMOTEUSER=${REMOTEUSER:-"ubuntu"}
     ssh \
         -T \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        ubuntu@${VMS_K8S_IP} echo "SSH ready" > /dev/null
+        ${REMOTEUSER}@${VMS_K8S_IP} echo "SSH ready" > /dev/null
 }
 
 
