@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: bugzilla-analytics
-          image: ghcr.io/fjramons/osm-analytics:1.0.0
+          image: ghcr.io/fjramons/osm-analytics:1.0.1
           imagePullPolicy: Always
           command: ["sleep", "inf"]
           # ports:

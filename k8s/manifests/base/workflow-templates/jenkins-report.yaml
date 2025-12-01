@@ -18,7 +18,7 @@ spec:
   templates:
     - name: jenkins-analysis
       container:
-        image: ghcr.io/fjramons/osm-analytics:1.0.0
+        image: ghcr.io/fjramons/osm-analytics:1.0.1
         command: ["/bin/sh", "-c"]
         args: ["Jenkins/launch_test_results.sh"]
         envFrom:

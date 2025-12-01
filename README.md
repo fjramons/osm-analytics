@@ -28,6 +28,11 @@
     - [C.2 Database troubleshooting](#c2-database-troubleshooting)
       - [C.2.1 From the `jenkins-analytics-troubleshoot` container](#c21-from-the-jenkins-analytics-troubleshoot-container)
       - [C.2.2 From your desktop](#c22-from-your-desktop)
+  - [ANNEX D: Create new release](#annex-d-create-new-release)
+    - [1. Update `DOCKER_TAG` in the `.env` file](#1-update-docker_tag-in-the-env-file)
+    - [2. update all references to the old tag in the repo](#2-update-all-references-to-the-old-tag-in-the-repo)
+    - [3. Commit and push changes to the repo](#3-commit-and-push-changes-to-the-repo)
+    - [4. Build and push new container images](#4-build-and-push-new-container-images)
 
 ## 0. Introduction
 
@@ -409,17 +414,17 @@ First, we will set the container names for regular execution and development:
 [ -f .env ] && source .env || echo ".env file does not exist. Skipping..."
 OSM_ANALYTICS_IMAGE=${OSM_ANALYTICS_IMAGE:-"osm-analytics"}
 DOCKER_REPO=${DOCKER_REPO:-"ttl.sh"}
-DOCKER_SDK_TAG=${DOCKER_SDK_TAG:-"24h"}
+DOCKER_TAG=${DOCKER_TAG:-"24h"}
 
 # Container for regular execution
-FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_SDK_TAG}
+FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_TAG}
 FULL_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:latest
 echo "${FULL_IMAGE_NAME}"
 echo "${FULL_IMAGE_NAME_LATEST}"
 
 # Container for local development
-FULL_DEV_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_SDK_TAG}
-FULL_DEV_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_SDK_TAG}
+FULL_DEV_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_TAG}
+FULL_DEV_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}-dev:${DOCKER_TAG}
 echo "${FULL_DEV_IMAGE_NAME}"
 echo "${FULL_DEV_IMAGE_NAME_LATEST}"
 ```
@@ -818,3 +823,87 @@ Once finished the troubleshooting, finish the port-forward:
 pkill -f "kubectl port-forward service/osm-metrics -n database"
 ```
 
+## ANNEX D: Create new release
+
+### 1. Update `DOCKER_TAG` in the `.env` file
+
+The `.env` file may contain the variables used to define the container names.
+
+First, it is advisable grabbing the current tag used in the repo:
+
+```bash
+[ -f .env ] && source .env || echo ".env file does not exist. Skipping..."
+OLD_TAG=${DOCKER_TAG:-"24h"}
+```
+
+Then, we can use `sed` to update the tag in the `.env` file:
+
+```bash
+# Update accordingly:
+NEW_TAG="1.0.1"
+# ---------------------------------
+
+sed -i "s/DOCKER_TAG=${OLD_TAG}/DOCKER_TAG=${NEW_TAG}/g" .env
+```
+
+### 2. update all references to the old tag in the repo
+
+Now, reload all the useful names in environment variables:
+
+```bash
+# Base names (CHANGE AS NEEDED)
+## Source environment variables in case we had release names there
+[ -f .env ] && source .env || echo ".env file does not exist. Skipping..."
+OSM_ANALYTICS_IMAGE=${OSM_ANALYTICS_IMAGE:-"osm-analytics"}
+DOCKER_REPO=${DOCKER_REPO:-"ttl.sh"}
+DOCKER_TAG=${DOCKER_TAG:-"24h"}
+
+# Container for regular execution
+FULL_IMAGE_NAME=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${DOCKER_TAG}
+FULL_IMAGE_NAME_LATEST=${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:latest
+echo "${FULL_IMAGE_NAME}"
+echo "${FULL_IMAGE_NAME_LATEST}"
+```
+
+Finally, we can use `grep` and `sed` to update all references to the old tag in the repo.
+
+```bash
+NEW_TAG=${DOCKER_TAG}
+OLD_FULL_IMAGE_NAME="${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${OLD_TAG}"
+NEW_FULL_IMAGE_NAME="${DOCKER_REPO}/${OSM_ANALYTICS_IMAGE}:${NEW_TAG}"
+echo ${OLD_FULL_IMAGE_NAME}
+echo ${NEW_FULL_IMAGE_NAME}
+
+# Dry run: list all files containing references to the old image name
+grep -rI "${OLD_FULL_IMAGE_NAME}" .
+
+# Update all references to the old image name
+grep -rIl "${OLD_FULL_IMAGE_NAME}" . | xargs sed -i "s|${OLD_FULL_IMAGE_NAME}|${NEW_FULL_IMAGE_NAME}|g"
+
+# (optional) Check that no references to the old image name remain
+grep -rI "${OLD_FULL_IMAGE_NAME}" .
+grep -rI "${NEW_FULL_IMAGE_NAME}" .
+```
+
+### 3. Commit and push changes to the repo
+
+```bash
+# Update accordingly
+git add -A
+git commit -m "Release version ${NEW_TAG}"
+git tag -a "${NEW_TAG}" -m "Version ${NEW_TAG}"
+git push origin main
+```
+
+### 4. Build and push new container images
+
+```bash
+# Build new image
+docker build -t ${FULL_IMAGE_NAME_LATEST} .
+docker tag ${FULL_IMAGE_NAME_LATEST} ${FULL_IMAGE_NAME}
+
+# Push image (assuming we have GHCR_PAT and USERNAME set in the environment)
+echo ${GHCR_PAT} | docker login ghcr.io -u ${USERNAME} --password-stdin
+docker push ${FULL_IMAGE_NAME_LATEST}
+docker push ${FULL_IMAGE_NAME}
+```

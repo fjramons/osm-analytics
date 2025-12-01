@@ -13,7 +13,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/templates/0/container/image
-        value: ghcr.io/fjramons/osm-analytics:1.0.0
+        value: ghcr.io/fjramons/osm-analytics:1.0.1
 
 # ---------------------- Generated resources ----------------------
 
