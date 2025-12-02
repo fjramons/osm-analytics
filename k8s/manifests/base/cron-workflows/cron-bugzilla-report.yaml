@@ -7,7 +7,7 @@ spec:
   # Run daily at 13:35 CET
   timezone: Europe/Paris
   schedules:
-  - "35 13 * * *"
+  - "35 8 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 7
   failedJobsHistoryLimit: 7
