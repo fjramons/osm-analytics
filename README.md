@@ -33,6 +33,7 @@
     - [2. update all references to the old tag in the repo](#2-update-all-references-to-the-old-tag-in-the-repo)
     - [3. Commit and push changes to the repo](#3-commit-and-push-changes-to-the-repo)
     - [4. Build and push new container images](#4-build-and-push-new-container-images)
+  - [ANNEX E: Suspend `CronWorkflows` temporarily](#annex-e-suspend-cronworkflows-temporarily)
 
 ## 0. Introduction
 
@@ -907,3 +908,19 @@ echo ${GHCR_PAT} | docker login ghcr.io -u ${USERNAME} --password-stdin
 docker push ${FULL_IMAGE_NAME_LATEST}
 docker push ${FULL_IMAGE_NAME}
 ```
+
+## ANNEX E: Suspend `CronWorkflows` temporarily
+
+It is possible suspending the existing `CronWorkflows` without removing them altogether.
+
+The easiest procedure is by using the CLI:
+
+```bash
+argo cron suspend bugzilla-report -n workflow-runs
+argo cron suspend installations-report -n workflow-runs
+argo cron suspend jenkins-report -n workflow-runs
+```
+
+Alternatively, you can set `spec.suspend` to `true` in each of the `CronWorkflow` definitions.
+
+Likewise, you can restore each `CronWorkflow` by using `argo cron resume <name>` or setting `spec.suspend` to `false` again.

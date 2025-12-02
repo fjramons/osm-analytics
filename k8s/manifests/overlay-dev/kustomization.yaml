@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
 - ../base
 
-# -------------------- Set processing image tag -------------------
+# -------------------- Set processing image tag -----------------------
 patches:
   - target:
       group: argoproj.io
@@ -15,7 +15,17 @@ patches:
         path: /spec/templates/0/container/image
         value: ghcr.io/fjramons/osm-analytics:latest
 
-# ---------------------- Generated resources ----------------------
+# -- Suspend all CronWorkflows (we are in a development environment) --
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: CronWorkflow
+    patch: |-
+      - op: add
+        path: /spec/suspend
+        value: true
+
+# ---------------------- Generated resources --------------------------
 
 secretGenerator:
 # Database credentials - `database` namespace
